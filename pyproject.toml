@@ -3,16 +3,14 @@ name = "meowdem"
 version = "0.1.0"
 description = "A software modem emulator for really weird nerds."
 readme = "README.md"
-requires-python = ">=3.0"
+requires-python = ">=3.4"
 authors = [
     {name = "Justin May", email = "may.justin@gmail.com"},
 ]
 dependencies = []
 
-[project.scripts]
-meowdem = "meowdem:main"
-
 [dependency-groups]
 test = [
     "pytest>=4.6.11",
+    "pytest-cov>=2.12.1",
 ]

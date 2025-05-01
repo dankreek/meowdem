@@ -3,7 +3,7 @@ class ATCommandInterpreter:
         self.echo_enabled = True
         self.verbose_mode = True
         self.registered_commands = {
-            "AT": self.handle_at,
+            "AT": self.handle_at_command,
             "ATE": self.handle_echo,
             "ATV": self.handle_verbose,
             "ATH": self.handle_hangup,
@@ -29,7 +29,7 @@ class ATCommandInterpreter:
         self.guard_time = 1.0  # Guard time in seconds for escape sequence
         self.last_char_time = 0
         
-    def process_data(self, data):
+    def receive_data(self, data):
         """Process data, handling it differently based on current mode"""
         import time
         current_time = time.time()
@@ -154,7 +154,7 @@ class ATCommandInterpreter:
             return f"\r\n{0 if success else 4}\r\n"
     
     # Command handlers
-    def handle_at(self, params):
+    def handle_at_command(self, params):
         """Basic AT command - checks if modem is responsive"""
         return self._format_response(True, "OK")
         
@@ -259,65 +259,3 @@ class ATCommandInterpreter:
         # In a real implementation, this would return actual signal metrics
         return "\r\n+CSQ: 28,0\r\n\r\nOK\r\n"  # Example: good signal strength
 
-
-def main():
-    import time
-    
-    interpreter = ATCommandInterpreter()
-    
-    print("=== Hayes AT Command Interpreter Demo ===")
-    
-    # Basic command test
-    print("\n-- Basic Command Test --")
-    response = interpreter.parse_command("AT")
-    print("Response:", response)
-    
-    # Test data mode and escape sequence
-    print("\n-- Data Mode and Escape Sequence Test --")
-    
-    print("Dialing...")
-    response = interpreter.process_data("ATD12345\r")
-    print(response)
-    
-    print("\nSending data in data mode:")
-    response = interpreter.process_data("Hello, this is test data!")
-    print(response)
-    
-    print("\nSending escape sequence with guard time:")
-    # Send escape sequence
-    print("Sending: +++")
-    interpreter.process_data("+++")
-    
-    # Wait for guard time
-    print("Waiting for guard time...")
-    time.sleep(1.1)  # Slightly more than guard time
-    
-    # Any character after guard time should trigger mode switch
-    response = interpreter.process_data("")  # Empty string to check status
-    print("Response after guard time:", response)
-    
-    # Verify we're in command mode
-    print("\nVerifying command mode:")
-    response = interpreter.process_data("AT\r")
-    print(response)
-    
-    # Return to online mode
-    print("\nReturning to online mode:")
-    response = interpreter.process_data("ATO\r")
-    print(response)
-    
-    # Send data again in data mode
-    print("\nSending more data:")
-    response = interpreter.process_data("Back in data mode!")
-    print(response)
-    
-    # Multiple command test
-    print("\n-- Multiple Command Test --")
-    multi_commands = "AT\rATE0\rAT+CSQ\r"
-    print(f"Sending multiple commands: {multi_commands}")
-    response = interpreter.process_data(multi_commands)
-    print("Response:", response)
-
-# Demo usage
-if __name__ == "__main__":
-    main()
