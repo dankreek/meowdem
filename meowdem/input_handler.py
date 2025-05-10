@@ -1,5 +1,6 @@
 import re
 import time
+import asyncio 
 
 class HayesATParser:
     def __init__(self, log_callback=print):
@@ -11,6 +12,7 @@ class HayesATParser:
         self.escape_detected_time = None
         self.guard_time = 1.0  # seconds before and after +++
         self.log = log_callback
+        self.guard_time_task = asyncio.create_task(self._monitor_guard_time())
 
         self.subcommand_handlers = [
             (r'^Z', self.handle_ATZ),
@@ -22,6 +24,19 @@ class HayesATParser:
             (r'^D(.+)', self.handle_ATD),
         ]
 
+    async def _monitor_guard_time(self):
+        """Background task to monitor if the guard time has passed."""
+        while True:
+            if self.escape_detected_time is not None:
+                elapsed_time = time.time() - self.escape_detected_time
+                if elapsed_time >= self.guard_time:
+                    self.mode = "command"  # Switch back to command mode
+                    self.log(f"Guard time passed: {elapsed_time:.2f}s switching to command mode")
+                    self.escape_detected_time = None  # Reset after guard time is handled
+                else:
+                    self.log(f"Guard time not yet passed: {elapsed_time:.2f}s")
+            await asyncio.sleep(0.1)  # Check every 100ms
+
     def receive(self, data: str):
         for char in data:
             self._receive_char(char)
@@ -31,12 +46,25 @@ class HayesATParser:
         self.last_input_time = now
 
         if self.mode == "data":
-            # TODO: Add special handling of escape sequences
+            if self.command_buffer == '+++':
+                self.escape_detected_time = None
+                self.command_buffer = ''
+            elif '+' in self.command_buffer and char != '+':
+                self.command_buffer = ''    
+
+            # Look for a full escape sequence of '+++'
+            if char == '+':
+                self.command_buffer += char
+                if self.command_buffer == '+++':
+                    self.log("[Escape sequence detected]")
+                    self.escape_detected_time = now
+
             self.log(f"[DATA MODE] {char}")
             return
 
         self.command_buffer += char.upper()
 
+        # TODO: Change this to assume only one character is received at a time
         while "AT" in self.command_buffer:
             at_index = self.command_buffer.find("AT")
             for end_index in range(at_index + 2, len(self.command_buffer)):
@@ -44,6 +72,7 @@ class HayesATParser:
                     command_str = self.command_buffer[at_index:end_index]
                     self.execute_command(command_str)
                     self.command_buffer = self.command_buffer[end_index + 1:]
+                    self.log(f"[COMMAND BUFFER] {self.command_buffer}")
                     break
             else:
                 break
