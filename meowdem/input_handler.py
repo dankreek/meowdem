@@ -3,7 +3,7 @@ import time
 
 class HayesATParser:
     def __init__(self, log_callback=print):
-        self.buffer = ""
+        self.command_buffer = ""
         self.command_prefix = "AT"
         self.s_registers = {}
         self.mode = "command"  # can be 'command' or 'data'
@@ -18,39 +18,32 @@ class HayesATParser:
             (r'^S(\d+)=(\d+)', self.handle_ats_set),
             (r'^&([A-Z])(\d+)', self.handle_amp_command),
             (r'^%([A-Z])(\d+)', self.handle_pct_command),
-            (r'^D(T|P)(.+)', self.handle_ATD),
+            (r'^D[T|P](.+)', self.handle_ATD),
             (r'^D(.+)', self.handle_ATD),
         ]
 
     def receive(self, data: str):
+        for char in data:
+            self._receive_char(char)
+
+    def _receive_char(self, char: str):
         now = time.time()
-
-        if data == "+++":
-            if now - self.last_input_time > self.guard_time:
-                self.mode = "command"
-                self.log("[Modem switched to COMMAND mode]")
-                self.buffer = ""
-                self.escape_detected_time = now
-            else:
-                self.log("[Ignored '+++' - failed guard time check]")
-            self.last_input_time = now
-            return
-
         self.last_input_time = now
 
         if self.mode == "data":
-            self.log(f"[DATA MODE] {data}")
+            # TODO: Add special handling of escape sequences
+            self.log(f"[DATA MODE] {char}")
             return
 
-        self.buffer += data.upper()
+        self.command_buffer += char.upper()
 
-        while "AT" in self.buffer:
-            at_index = self.buffer.find("AT")
-            for end_index in range(at_index + 2, len(self.buffer)):
-                if self.buffer[end_index] in ['\r', '\n']:
-                    command_str = self.buffer[at_index:end_index]
+        while "AT" in self.command_buffer:
+            at_index = self.command_buffer.find("AT")
+            for end_index in range(at_index + 2, len(self.command_buffer)):
+                if self.command_buffer[end_index] in ['\r', '\n']:
+                    command_str = self.command_buffer[at_index:end_index]
                     self.execute_command(command_str)
-                    self.buffer = self.buffer[end_index + 1:]
+                    self.command_buffer = self.command_buffer[end_index + 1:]
                     break
             else:
                 break
