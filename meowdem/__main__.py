@@ -1,8 +1,9 @@
 import termios
 import sys
 import tty
+import asyncio
 from copy import deepcopy
-from typing import List
+from typing import List, AsyncGenerator
 
 from meowdem.input_handler import HayesATParser
 
@@ -36,24 +37,27 @@ def make_raw_with_signals(fd) -> List[int]:
     return old_settings
 
 
-def stdin_without_echo():
+async def stdin_without_echo() -> AsyncGenerator[str, None]:
     fd = sys.stdin.fileno()
     old_settings = make_raw_with_signals(fd)
 
     try:
+        loop = asyncio.get_running_loop()
         while True:
-            yield sys.stdin.read(1)
+            # Use asyncio to read a single character asynchronously
+            next_char = await loop.run_in_executor(None, sys.stdin.read, 1)
+            yield next_char
     finally:
         # Restore the original terminal settings
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 
-def main() -> int:
+async def main() -> int:
     parser = HayesATParser()
 
-    for next_char in stdin_without_echo():
+    async for next_char in stdin_without_echo():
         parser.receive(next_char)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    asyncio.run(main())
