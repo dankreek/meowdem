@@ -6,7 +6,7 @@ from meowdem.input_handler import HayesATParser
 @pytest.fixture
 def parser():
     logs = []
-    p = HayesATParser(log_callback=logs.append)
+    p = HayesATParser(client_output_cb=logs.append)
     return p, logs
 
 

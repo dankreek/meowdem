@@ -3,15 +3,15 @@ import time
 import asyncio 
 
 class HayesATParser:
-    def __init__(self, log_callback=print):
+    def __init__(self, client_output_cb=print):
         self.command_buffer = ""
         self.command_prefix = "AT"
         self.s_registers = {}
         self.mode = "command"  # can be 'command' or 'data'
         self.last_input_time = time.time()
         self.escape_detected_time = None
-        self.guard_time = 1.0  # seconds before and after +++
-        self.log = log_callback
+        self.guard_time = 1.0  # Seconds to wait before switching back to command mode after '+++'
+        self.client_out = client_output_cb
         self.guard_time_task = asyncio.create_task(self._monitor_guard_time())
 
         self.subcommand_handlers = [
@@ -31,10 +31,9 @@ class HayesATParser:
                 elapsed_time = time.time() - self.escape_detected_time
                 if elapsed_time >= self.guard_time:
                     self.mode = "command"  # Switch back to command mode
-                    self.log(f"Guard time passed: {elapsed_time:.2f}s switching to command mode")
+                    self.client_out("OK\r\n")
                     self.escape_detected_time = None  # Reset after guard time is handled
-                else:
-                    self.log(f"Guard time not yet passed: {elapsed_time:.2f}s")
+
             await asyncio.sleep(0.1)  # Check every 100ms
 
     def receive(self, data: str):
@@ -56,31 +55,29 @@ class HayesATParser:
             if char == '+':
                 self.command_buffer += char
                 if self.command_buffer == '+++':
-                    self.log("[Escape sequence detected]")
                     self.escape_detected_time = now
 
-            self.log(f"[DATA MODE] {char}")
             return
 
-        self.command_buffer += char.upper()
+        next_char = char.upper()
+        self.command_buffer += next_char
+        self.client_out(next_char)
 
-        # TODO: Change this to assume only one character is received at a time
         while "AT" in self.command_buffer:
             at_index = self.command_buffer.find("AT")
             for end_index in range(at_index + 2, len(self.command_buffer)):
                 if self.command_buffer[end_index] in ['\r', '\n']:
                     command_str = self.command_buffer[at_index:end_index]
+                    self.client_out("\n")
                     self.execute_command(command_str)
                     self.command_buffer = self.command_buffer[end_index + 1:]
-                    self.log(f"[COMMAND BUFFER] {self.command_buffer}")
                     break
             else:
                 break
 
     def execute_command(self, command: str):
-        self.log(f"[Executing] {command}")
         if not command.startswith("AT"):
-            self.log("ERROR: Invalid command prefix")
+            self.client_out("ERROR: Invalid command prefix\r\n")
             return
 
         command_body = command[2:]
@@ -95,29 +92,28 @@ class HayesATParser:
                     matched = True
                     break
             if not matched:
-                self.log(f"ERROR: Unknown subcommand at: '{command_body[pos:]}'")
+                self.client_out(f"ERROR: Unknown subcommand at: '{command_body[pos:]}'\r\n")
                 break
         else:
-            self.log("OK")
+            if self.mode == 'command':
+                self.client_out("OK\r\n")
 
     # === Handlers ===
     def handle_ATZ(self, *args):
-        self.log("Resetting modem...")
+        pass
 
     def handle_ATI(self, *args):
-        self.log("Modem Info: Python Virtual Modem v1.0")
+        self.client_out("Modem Info: Python Virtual Modem v1.0\r\n")
 
     def handle_ats_set(self, reg, value):
         self.s_registers[int(reg)] = int(value)
-        self.log(f"Set S{reg} = {value}")
 
     def handle_amp_command(self, letter, value):
-        self.log(f"Set &{letter} = {value}")
+        pass
 
     def handle_pct_command(self, letter, value):
-        self.log(f"Set %{letter} = {value}")
+        pass
 
     def handle_ATD(self, number):
-        self.log(f"Dialing {number}...")
+        self.client_out(f"Dialing {number}...\r\n")
         self.mode = "data"
-        self.log("[Modem switched to DATA mode]")
