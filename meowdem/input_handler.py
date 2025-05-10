@@ -18,6 +18,7 @@ class HayesATParser:
             (r'^S(\d+)=(\d+)', self.handle_ats_set),
             (r'^&([A-Z])(\d+)', self.handle_amp_command),
             (r'^%([A-Z])(\d+)', self.handle_pct_command),
+            (r'^D(T|P)(.+)', self.handle_ATD),
             (r'^D(.+)', self.handle_ATD),
         ]
 
