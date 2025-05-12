@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 class HayesATParser:
     def __init__(self, client_output_cb=print):
-        self.command_buffer = ""
+        self.command_buffer: str = ""
         self.command_prefix = "AT"
         self.s_registers = {}
         self.mode = "command"  # can be 'command' or 'data'
@@ -58,6 +58,12 @@ class HayesATParser:
                 if self.command_buffer == '+++':
                     self.escape_detected_time = now
 
+            return
+
+        # Handle backspace with echo as delete
+        if char in ['\x7f', '\b']:
+            self.client_out('\b \b')
+            self.command_buffer = self.command_buffer[:-1]
             return
 
         next_char = char.upper()
