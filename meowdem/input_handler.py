@@ -1,6 +1,7 @@
 import re
 import time
-import asyncio 
+import asyncio
+from typing import Optional, Tuple 
 
 class HayesATParser:
     def __init__(self, client_output_cb=print):
@@ -114,6 +115,26 @@ class HayesATParser:
     def handle_pct_command(self, letter, value):
         pass
 
-    def handle_ATD(self, number):
-        self.client_out(f"Dialing {number}...\r\n")
+    @staticmethod
+    def _parse_address(address: str, default_port: int = 23) -> Tuple[Optional[str], Optional[int]]:
+        pattern = re.compile(
+            r'\b(?P<host>(?:\d{1,3}\.){3}\d{1,3}|(?:[a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+)(?::(?P<port>\d{1,5}))?\b'
+        )
+
+        match = pattern.search(address.strip())
+        if match:
+            host: str = match.group("host")
+            port: int = int(match.group("port")) if match.group("port") else default_port
+            return host, port
+
+        return None, None
+
+    def handle_ATD(self, number: str):
+        host, port = HayesATParser._parse_address(number)
+
+        if host is None:
+            self.client_out('INVALID ADDRESS. USE THE FORM <HOSTNAME>:<PORT>')
+            return
+
+        self.client_out(f"Dialing {host}:{port}...\r\n")
         self.mode = "data"
