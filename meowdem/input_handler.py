@@ -18,7 +18,6 @@ class HayesATParser:
         self.command_prefix = "AT"
         self.s_registers = {}
         self.mode = ParserMode.COMMAND  
-        self.last_input_time = time.time()
         self.escape_detected_time = None
         self.guard_time = 1.0  # Seconds to wait before switching back to command mode after '+++'
         self.client_out = client_output_cb
@@ -61,9 +60,6 @@ class HayesATParser:
             self._receive_char(char)
 
     def _receive_char(self, char: str):
-        now = time.time()
-        self.last_input_time = now
-
         if self.mode == ParserMode.DATA:
             if self.writer and not self.writer.is_closing():
                 try:
@@ -82,7 +78,7 @@ class HayesATParser:
             if char == '+':
                 self.command_buffer += char
                 if self.command_buffer == '+++':
-                    self.escape_detected_time = now
+                    self.escape_detected_time = time.time()
 
             return
 
