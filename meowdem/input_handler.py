@@ -2,13 +2,18 @@ import re
 import time
 import asyncio
 from typing import Optional, Tuple 
+from enum import Enum
+
+class ParserMode(Enum):
+    COMMAND = "command"
+    DATA = "data"
 
 class HayesATParser:
     def __init__(self, client_output_cb=print):
         self.command_buffer: str = ""
         self.command_prefix = "AT"
         self.s_registers = {}
-        self.mode = "command"  # can be 'command' or 'data'
+        self.mode = ParserMode.COMMAND  
         self.last_input_time = time.time()
         self.escape_detected_time = None
         self.guard_time = 1.0  # Seconds to wait before switching back to command mode after '+++'
@@ -31,7 +36,7 @@ class HayesATParser:
             if self.escape_detected_time is not None:
                 elapsed_time = time.time() - self.escape_detected_time
                 if elapsed_time >= self.guard_time:
-                    self.mode = "command"  # Switch back to command mode
+                    self.mode = ParserMode.COMMAND  # Switch back to command mode
                     self.client_out("OK\r\n")
                     self.escape_detected_time = None  # Reset after guard time is handled
 
@@ -45,7 +50,7 @@ class HayesATParser:
         now = time.time()
         self.last_input_time = now
 
-        if self.mode == "data":
+        if self.mode == ParserMode.DATA:
             if self.command_buffer == '+++':
                 self.escape_detected_time = None
                 self.command_buffer = ''
@@ -102,7 +107,7 @@ class HayesATParser:
                 self.client_out(f"ERROR: Unknown subcommand at: '{command_body[pos:]}'\r\n")
                 break
         else:
-            if self.mode == 'command':
+            if self.mode == ParserMode.COMMAND:
                 self.client_out("OK\r\n")
 
     # === Handlers ===
@@ -143,4 +148,4 @@ class HayesATParser:
             return
 
         self.client_out(f"Dialing {host}:{port}...\r\n")
-        self.mode = "data"
+        self.mode = ParserMode.DATA

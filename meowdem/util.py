@@ -1,6 +1,14 @@
 from typing import Generator, Optional
+from enum import Enum
 
-def telnet_bytewise_filter() -> Generator[Optional[int], int, None]:
+class TelnetState(Enum):
+    DATA = "DATA"
+    IAC = "IAC"
+    IAC_OPTION = "IAC_OPTION"
+    SB = "SB"
+    SB_IAC = "SB_IAC"
+
+def telnet_filter() -> Generator[Optional[int], int, None]:
     IAC = 255
     SB = 250
     SE = 240
@@ -9,55 +17,55 @@ def telnet_bytewise_filter() -> Generator[Optional[int], int, None]:
     DO = 253
     DONT = 254
 
-    state: str = "DATA"
+    state: TelnetState = TelnetState.DATA
     subnegotiation: bool = False
     sb_data: list[int] = []
 
     while True:
         byte: int = yield  # Receive one byte at a time
 
-        if state == "DATA":
+        if state == TelnetState.DATA:
             if byte == IAC:
-                state = "IAC"
+                state = TelnetState.IAC
             else:
                 yield byte  # Normal data byte
 
-        elif state == "IAC":
+        elif state == TelnetState.IAC:
             if byte == IAC:
                 yield IAC  # Escaped 0xFF
-                state = "DATA"
+                state = TelnetState.DATA
             elif byte in (WILL, WONT, DO, DONT):
-                state = "IAC_OPTION"
+                state = TelnetState.IAC_OPTION
                 option_length = 1
             elif byte == SB:
-                state = "SB"
+                state = TelnetState.SB
                 subnegotiation = True
                 sb_data = []
             else:
                 # Simple command, no option
-                state = "DATA"
+                state = TelnetState.DATA
 
-        elif state == "IAC_OPTION":
+        elif state == TelnetState.IAC_OPTION:
             # Skip option byte
-            state = "DATA"
+            state = TelnetState.DATA
 
-        elif state == "SB":
+        elif state == TelnetState.SB:
             if byte == IAC:
-                state = "SB_IAC"
+                state = TelnetState.SB_IAC
             else:
                 sb_data.append(byte)
 
-        elif state == "SB_IAC":
+        elif state == TelnetState.SB_IAC:
             if byte == IAC:
                 sb_data.append(IAC)  # Escaped IAC inside SB
-                state = "SB"
+                state = TelnetState.SB
             elif byte == SE:
                 subnegotiation = False
                 sb_data = []
-                state = "DATA"
+                state = TelnetState.DATA
             else:
                 # Unexpected — discard SB
-                state = "DATA"
+                state = TelnetState.DATA
 
 ## Example: feeding bytes into the generator and printing output
 #def run_bytewise_example(data):
