@@ -18,7 +18,8 @@ class HayesATParser:
         self.command_prefix = "AT"
         self.s_registers = {}
         self.mode = ParserMode.COMMAND  
-        self.escape_detected_time = None
+        self.echo_enabled = True
+        self.escape_detected_time: Optional[float] = None
         self.guard_time = 1.0  # Seconds to wait before switching back to command mode after '+++'
         self.client_out = client_output_cb
         self.guard_time_task = asyncio.create_task(self._monitor_guard_time())
@@ -33,7 +34,9 @@ class HayesATParser:
             (r'^%([A-Z])(\d+)', self.handle_pct_command),
             (r'^D[T|P](.+)', self.handle_ATD),
             (r'^D(.+)', self.handle_ATD),
-            (r'^H', self.handle_ATH),  # Add support for ATH command
+            (r'^H(0)?', self.handle_ATH),
+            (r'^O', self.handle_ATO),
+            (r'^E(0|1|\?)', self.handle_ATE),
         ]
 
     async def _monitor_guard_time(self):
@@ -52,7 +55,7 @@ class HayesATParser:
         if self.mode == ParserMode.DIALING:
             if self.dialing_task and not self.dialing_task.done():
                 self.dialing_task.cancel()  # Cancel the dialing operation
-                self.client_out("\r\nNO CARRIER\r\n")
+                self.client_out("NO CARRIER\r\n")
                 self.mode = ParserMode.COMMAND
             return 
 
@@ -84,20 +87,25 @@ class HayesATParser:
 
         # Handle backspace with echo as delete
         if char in ['\x7f', '\b']:
-            self.client_out('\b \b')
+            if self.echo_enabled:
+                self.client_out('\b \b') 
             self.command_buffer = self.command_buffer[:-1]
             return
 
         next_char = char.upper()
         self.command_buffer += next_char
-        self.client_out(next_char)
+
+        if self.echo_enabled:
+            self.client_out(next_char)
 
         while "AT" in self.command_buffer:
             at_index = self.command_buffer.find("AT")
             for end_index in range(at_index + 2, len(self.command_buffer)):
                 if self.command_buffer[end_index] in ['\r', '\n']:
                     command_str = self.command_buffer[at_index:end_index]
-                    self.client_out("\n")
+                    if self.echo_enabled:
+                        self.client_out("\n")
+
                     self.execute_command(command_str)
                     self.command_buffer = self.command_buffer[end_index + 1:]
                     break
@@ -105,8 +113,8 @@ class HayesATParser:
                 break
 
     def execute_command(self, command: str):
-        if not command.startswith("AT"):
-            self.client_out("ERROR: Invalid command prefix\r\n")
+        if not command.startswith('AT'):
+            self.client_out('ERROR\r\n')
             return
 
         command_body = command[2:]
@@ -149,8 +157,30 @@ class HayesATParser:
             self.writer.close()
             asyncio.create_task(self.writer.wait_closed())
             self.writer = None
-            self.client_out("\r\nNO CARRIER\r\n")
+            self.client_out("NO CARRIER\r\n")
         self.mode = ParserMode.COMMAND
+
+    def handle_ATO(self, *args):
+        """Handler for the ATO command to return to DATA mode."""
+        if self.writer and not self.writer.is_closing():
+            self.mode = ParserMode.DATA
+            self.client_out("CONNECT\r\n")
+        else:
+            self.client_out("NO CARRIER\r\n")
+
+    def handle_ATE(self, value: str):
+        """Handler for the ATE command to toggle or query echo mode."""
+        if value == "0":
+            self.echo_enabled = False
+            self.client_out("OK\r\n")
+        elif value == "1":
+            self.echo_enabled = True
+            self.client_out("OK\r\n")
+        elif value == "?":
+            echo_status = "1" if getattr(self, 'echo_enabled', True) else "0"
+            self.client_out(f"{echo_status}\r\n")
+        else:
+            self.client_out("ERROR\r\n")
 
     @staticmethod
     def _parse_address(address: str, default_port: int = 23) -> Tuple[Optional[str], Optional[int]]:
