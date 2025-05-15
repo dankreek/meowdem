@@ -30,6 +30,7 @@ class HayesATParser:
             (r'^Z', self.handle_ATZ),
             (r'^I', self.handle_ATI),
             (r'^S(\d+)=(\d+)', self.handle_ats_set),
+            (r'^S(\d+)\?', self.handle_ats_query),
             (r'^&([A-Z])(\d+)', self.handle_amp_command),
             (r'^%([A-Z])(\d+)', self.handle_pct_command),
             (r'^D[T|P](.+)', self.handle_ATD),
@@ -37,6 +38,7 @@ class HayesATParser:
             (r'^H(0)?', self.handle_ATH),
             (r'^O', self.handle_ATO),
             (r'^E(0|1|\?)', self.handle_ATE),
+            (r'^\*T(0|1)', self.handle_AT_star_T),
         ]
 
     async def _monitor_guard_time(self):
@@ -113,8 +115,8 @@ class HayesATParser:
                 break
 
     def execute_command(self, command: str):
-        if not command.startswith('AT'):
-            self.client_out('ERROR\r\n')
+        if not command.startswith("AT"):
+            self.client_out("ERROR: Invalid command prefix\r\n")
             return
 
         command_body = command[2:]
@@ -129,21 +131,32 @@ class HayesATParser:
                     matched = True
                     break
             if not matched:
-                self.client_out(f"ERROR: Unknown subcommand at: '{command_body[pos:]}'\r\n")
-                break
+                if command_body[pos] in ['Z', '&', '%', 'S', 'D', 'H', 'O']:
+                    pos += 1  # Skip unsupported commands without arguments
+                else:
+                    self.client_out(f"ERROR: Unknown subcommand at: '{command_body[pos:]}'\r\n")
+                    break
         else:
             if self.mode == ParserMode.COMMAND:
                 self.client_out("OK\r\n")
 
     # === Handlers ===
     def handle_ATZ(self, *args):
-        pass
+        self.echo_enabled = True
+        self.s_registers = {}
 
     def handle_ATI(self, *args):
         self.client_out("Modem Info: Python Virtual Modem v1.0\r\n")
+        self.client_out(f"S-Registers: {self.s_registers}\r\n")
 
     def handle_ats_set(self, reg, value):
         self.s_registers[int(reg)] = int(value)
+
+    def handle_ats_query(self, reg: str):
+        """Handler for querying an S-register value."""
+        reg_num = int(reg)
+        value = self.s_registers.get(reg_num, 0)  # Default to 0 if not set
+        self.client_out(f"{value}\r\n")
 
     def handle_amp_command(self, letter, value):
         pass
@@ -179,6 +192,15 @@ class HayesATParser:
         elif value == "?":
             echo_status = "1" if getattr(self, 'echo_enabled', True) else "0"
             self.client_out(f"{echo_status}\r\n")
+        else:
+            self.client_out("ERROR\r\n")
+
+    def handle_AT_star_T(self, value: str):
+        """Handler for the custom AT*T command to toggle telnet translation."""
+        if value == "1":
+            self.telnet_translation_enabled = True
+        elif value == "0":
+            self.telnet_translation_enabled = False
         else:
             self.client_out("ERROR\r\n")
 
