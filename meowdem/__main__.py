@@ -55,7 +55,7 @@ async def stdin_without_echo() -> AsyncGenerator[str, None]:
 def client_out(char: str):
     print(char, end='', flush=True)
 
-async def main() -> int:
+async def main():
     parser = HayesATParser(client_out)
 
     async for next_char in stdin_without_echo():

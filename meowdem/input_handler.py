@@ -238,7 +238,12 @@ class HayesATParser:
                 data = await reader.read(1024)  # Read up to 1024 bytes
                 if not data:
                     break  # Connection closed
-                self.client_out(data.decode('latin1', errors='ignore'))  # Output data in latin1 encoding
+
+                if self.telnet_translation_enabled:
+                    translated = self.telnet_translator.input_translation(data)
+                    self.client_out(translated)
+                else:
+                    self.client_out(data.decode('latin1', errors='ignore'))  # Output data in latin1 encoding
         except Exception as e:
             self.client_out(f"ERROR: {str(e)}\r\n")
         finally:
