@@ -3,9 +3,11 @@ import time
 import asyncio
 from typing import Optional, Tuple 
 from enum import Enum
+from meowdem.util import TelnetTranslator
 
 # Timeout constant
 DEFAULT_CONNECTION_TIMEOUT = 30  # Timeout in seconds
+ESCAPE_GUARD_TIME = 1.0  # Seconds to wait before switching back to command mode after '+++'
 
 class ParserMode(Enum):
     COMMAND = "command"
@@ -16,15 +18,21 @@ class HayesATParser:
     def __init__(self, client_output_cb=print):
         self.command_buffer: str = ""
         self.command_prefix = "AT"
-        self.s_registers = {}
         self.mode = ParserMode.COMMAND  
-        self.echo_enabled = True
+
+        # Variables to handle escape from DATA to COMMAND mode
         self.escape_detected_time: Optional[float] = None
-        self.guard_time = 1.0  # Seconds to wait before switching back to command mode after '+++'
+        self.escape_guard_time = ESCAPE_GUARD_TIME  # Use the constant here
         self.client_out = client_output_cb
         self.guard_time_task = asyncio.create_task(self._monitor_guard_time())
+        
         self.writer: Optional[asyncio.StreamWriter] = None  # Store the writer, None if no connection is open
         self.dialing_task: Optional[asyncio.Task] = None  # Store the dialing task
+
+        # Modem state variables
+        self.s_registers = {}
+        self.telnet_translation_enabled: bool = False
+        self.echo_enabled = True
 
         self.subcommand_handlers = [
             (r'^Z', self.handle_ATZ),
@@ -46,7 +54,7 @@ class HayesATParser:
         while True:
             if self.escape_detected_time is not None:
                 elapsed_time = time.time() - self.escape_detected_time
-                if elapsed_time >= self.guard_time:
+                if elapsed_time >= ESCAPE_GUARD_TIME:  # Use the constant here
                     self.mode = ParserMode.COMMAND  # Switch back to command mode
                     self.client_out("OK\r\n")
                     self.escape_detected_time = None  # Reset after guard time is handled
@@ -144,10 +152,12 @@ class HayesATParser:
     def handle_ATZ(self, *args):
         self.echo_enabled = True
         self.s_registers = {}
+        self.telnet_translation_enabled = False
 
     def handle_ATI(self, *args):
         self.client_out("Modem Info: Python Virtual Modem v1.0\r\n")
-        self.client_out(f"S-Registers: {self.s_registers}\r\n")
+        self.client_out(f"Echo enabled: {self.echo_enabled}\r\n") 
+        self.client_out(f"Telnet translation enabled: {self.telnet_translation_enabled}\r\n")
 
     def handle_ats_set(self, reg, value):
         self.s_registers[int(reg)] = int(value)

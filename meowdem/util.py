@@ -13,7 +13,7 @@ class TelnetState(Enum):
     SB_BYTE = 250
     SE_BYTE = 240
 
-class TelnetSession:
+class TelnetTranslator:
     def __init__(self):
         self.state: TelnetState = TelnetState.DATA
         self.subnegotiation: bool = False
