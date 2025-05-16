@@ -2,13 +2,14 @@ import termios
 import sys
 import tty
 import asyncio
+import termios
 from copy import deepcopy
 from typing import List, AsyncGenerator
 
 from meowdem.input_handler import HayesATParser
 
 
-def make_raw_with_signals(fd) -> List[int]:
+def make_raw_with_signals(fd) -> list:
     """ Set terminal to raw mode but keep signal generation (e.g., Ctrl-C). 
     
     :param fd: File descriptor of the terminal (usually sys.stdin.fileno()).
@@ -18,19 +19,19 @@ def make_raw_with_signals(fd) -> List[int]:
     new_settings = deepcopy(old_settings)
 
     # Modify the new settings to make the terminal raw
-    new_settings[tty.IFLAG] &= ~(tty.IGNBRK | tty.BRKINT | tty.IGNPAR |
-                                     tty.PARMRK | tty.INPCK | tty.ISTRIP |
-                                     tty.INLCR | tty.IGNCR | tty.ICRNL |
-                                     tty.IXON | tty.IXANY | tty.IXOFF)
-    new_settings[tty.OFLAG] &= ~tty.OPOST
-    new_settings[tty.CFLAG] &= ~(tty.PARENB | tty.CSIZE)
-    new_settings[tty.CFLAG] |= tty.CS8
-    new_settings[tty.LFLAG] &= ~(tty.ECHO | tty.ECHOE | tty.ECHOK |
-                                     tty.ECHONL | tty.ICANON | tty.IEXTEN |
-                                     tty.NOFLSH | tty.TOSTOP)
-    new_settings[tty.LFLAG] |= tty.ISIG  # Re-enable signal generation (Ctrl-C, etc.)
-    new_settings[tty.CC][tty.VMIN] = 1
-    new_settings[tty.CC][tty.VTIME] = 0
+    new_settings[tty.IFLAG] &= ~(termios.IGNBRK | termios.BRKINT | termios.IGNPAR |
+                             termios.PARMRK | termios.INPCK | termios.ISTRIP |
+                             termios.INLCR | termios.IGNCR | termios.ICRNL |
+                             termios.IXON | termios.IXANY | termios.IXOFF)
+    new_settings[tty.OFLAG] &= ~termios.OPOST
+    new_settings[tty.CFLAG] &= ~(termios.PARENB | termios.CSIZE)
+    new_settings[tty.CFLAG] |= termios.CS8
+    new_settings[tty.LFLAG] &= ~(termios.ECHO | termios.ECHOE | termios.ECHOK |
+                             termios.ECHONL | termios.ICANON | termios.IEXTEN |
+                             termios.NOFLSH | termios.TOSTOP)
+    new_settings[tty.LFLAG] |= termios.ISIG  # Re-enable signal generation (Ctrl-C, etc.)
+    new_settings[tty.CC][termios.VMIN] = 1
+    new_settings[tty.CC][termios.VTIME] = 0
 
     # Apply the new settings
     termios.tcsetattr(fd, termios.TCSADRAIN, new_settings)
