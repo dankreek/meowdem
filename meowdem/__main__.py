@@ -4,7 +4,8 @@ import tty
 import asyncio
 import termios
 from copy import deepcopy
-from typing import List, AsyncGenerator
+from typing import List, AsyncGenerator, Callable
+import multiprocessing
 
 from meowdem.input_handler import HayesATParser
 
@@ -56,12 +57,54 @@ async def stdin_without_echo() -> AsyncGenerator[str, None]:
 def client_out(data: bytes):
     print(data.decode('latin1'), end='', flush=True)
 
-async def main():
-    parser = HayesATParser(client_out)
 
+async def handle_tcp_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+    """ Async handler for each TCP client using HayesATParser. 
+    :param reader: StreamReader for the client.
+    :param writer: StreamWriter for the client.
+    :return: None
+    """
+    def tcp_client_out(data: bytes) -> None:
+        """ Output function for HayesATParser to send data to TCP client. 
+        :param data: Data to send.
+        :return: None
+        """
+        writer.write(data)
+        # Schedule drain asynchronously
+        asyncio.create_task(writer.drain())
+
+    parser = HayesATParser(tcp_client_out)
+    try:
+        while True:
+            data = await reader.read(1024)
+            if not data:
+                break
+            parser.receive(data)
+    except Exception:
+        pass
+    finally:
+        writer.close()
+        await writer.wait_closed()
+
+async def _stdin_loop(parser: HayesATParser) -> None:
+    """ Read from stdin and send to parser. 
+    :param parser: HayesATParser instance.
+    :return: None
+    """
     async for next_char in stdin_without_echo():
         parser.receive(next_char.encode('latin1'))
 
+async def main() -> None:
+    """ Main entry point: handles both stdin and TCP connections. 
+    :return: None
+    """
+    parser = HayesATParser(client_out)
+    server = await asyncio.start_server(handle_tcp_client, '0.0.0.0', 2323)
+    async with server:
+        stdin_task = asyncio.create_task(_stdin_loop(parser))
+        await server.serve_forever()
+        await stdin_task
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     asyncio.run(main())

@@ -298,12 +298,7 @@ class HayesATParser:
                 self.client_out_str('CONNECTED\r\n')
                 self.mode = ParserMode.DATA
                 await self._handle_socket_connection(reader, writer)
-            except asyncio.TimeoutError:
-                self.client_out_str('NO CARRIER\r\n')
-                self.writer = None  # Ensure writer is reset on error
-                self.mode = ParserMode.COMMAND
             except Exception as e:
-                self.client_out_str(f"\r\nERROR: {str(e)}\r\n")
                 self.client_out_str('NO CARRIER\r\n')
                 self.writer = None  # Ensure writer is reset on error
                 self.mode = ParserMode.COMMAND
