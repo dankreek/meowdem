@@ -1,4 +1,4 @@
-from typing import Generator, Optional
+from typing import Generator
 from enum import Enum
 
 class TelnetState(Enum):
@@ -17,7 +17,6 @@ class TelnetTranslator:
     def __init__(self):
         self.state: TelnetState = TelnetState.DATA
         self.subnegotiation: bool = False
-        self.sb_data: list[int] = []
 
     def input_translation(self) -> Generator[bytes, bytes, None]:
         """
@@ -48,7 +47,6 @@ class TelnetTranslator:
                     elif byte == TelnetState.SB_BYTE:
                         self.state = TelnetState.SB
                         self.subnegotiation = True
-                        self.sb_data = []
                     else:
                         # Simple command, no option
                         self.state = TelnetState.DATA
@@ -60,16 +58,12 @@ class TelnetTranslator:
                 elif self.state == TelnetState.SB:
                     if byte == TelnetState.IAC_BYTE:
                         self.state = TelnetState.SB_IAC
-                    else:
-                        self.sb_data.append(byte)
 
                 elif self.state == TelnetState.SB_IAC:
                     if byte == TelnetState.IAC_BYTE:
-                        self.sb_data.append(TelnetState.IAC_BYTE)  # Escaped IAC inside SB
                         self.state = TelnetState.SB
                     elif byte == TelnetState.SE_BYTE:
                         self.subnegotiation = False
-                        self.sb_data = []
                         self.state = TelnetState.DATA
                     else:
                         # Unexpected — discard SB
