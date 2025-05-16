@@ -52,14 +52,14 @@ async def stdin_without_echo() -> AsyncGenerator[str, None]:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 
-def client_out(char: str):
-    print(char, end='', flush=True)
+def client_out(data: bytes):
+    print(data.decode('latin1'), end='', flush=True)
 
 async def main():
     parser = HayesATParser(client_out)
 
     async for next_char in stdin_without_echo():
-        parser.receive(next_char)
+        parser.receive(next_char.encode('latin1'))
 
 
 if __name__ == "__main__":
