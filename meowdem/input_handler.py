@@ -49,6 +49,7 @@ class HayesATParser:
             (r'^O', self.handle_ATO),
             (r'^E(0|1|\?)', self.handle_ATE),
             (r'^\*T(0|1)', self.handle_AT_star_T),
+            (r'^\?', self.handle_ATQMARK),  # Add AT? handler
         ]
 
     def client_out_str(self, data: str):
@@ -68,6 +69,9 @@ class HayesATParser:
             await asyncio.sleep(0.1)  # Check every 100ms
 
     def receive(self, data: bytes):
+        if self.telnet_translation_enabled:
+            data = self.telnet_translator.input_translation(data)
+
         if self.mode == ParserMode.DIALING:
             if self.dialing_task and not self.dialing_task.done():
                 self.dialing_task.cancel()  # Cancel the dialing operation
@@ -221,6 +225,25 @@ class HayesATParser:
             self.telnet_translation_enabled = False
         else:
             self.client_out_str('ERROR\r\n')
+
+    def handle_ATQMARK(self, *args):
+        """ Handler for the AT? command to display help text. """
+        help_text = (
+            'Hayes AT Command Help:\r\n'
+            'ATZ            - Reset modem\r\n'
+            'ATI            - Modem info\r\n'
+            'ATS<n>=<v>     - Set S-register n to value v\r\n'
+            'ATS<n>?        - Query S-register n\r\n'
+            'ATDT<addr>     - Dial (tone) <host>:<port>\r\n'
+            'ATDP<addr>     - Dial (pulse) <host>:<port>\r\n'
+            'ATD<addr>      - Dial <host>:<port>\r\n'
+            'ATH            - Hang up\r\n'
+            'ATO            - Return to data mode\r\n'
+            'ATE0/1/?       - Echo off/on/query\r\n'
+            'AT*T0/1        - Telnet translation off/on\r\n'
+            'AT?            - This help\r\n'
+        )
+        self.client_out_str(help_text)
 
     @staticmethod
     def _parse_address(address: str, default_port: int = 23) -> Tuple[Optional[str], Optional[int]]:
