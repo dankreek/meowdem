@@ -10,14 +10,14 @@ DEFAULT_CONNECTION_TIMEOUT = 30  # Timeout in seconds
 ESCAPE_GUARD_TIME = 1.0  # Seconds to wait before switching back to command mode after '+++'
 
 class ParserMode(Enum):
-    COMMAND = "command"
-    DATA = "data"
-    DIALING = "dialing"  # New mode state
+    COMMAND = 'command'
+    DATA = 'data'
+    DIALING = 'dialing'  # New mode state
 
 class HayesATParser:
     def __init__(self, client_output_cb: Callable[[bytes], None] = print):
-        self.command_buffer: str = ""
-        self.command_prefix = "AT"
+        self.command_buffer: str = ''
+        self.command_prefix = 'AT'
         self.mode = ParserMode.COMMAND  
 
         # Variables to handle escape from DATA to COMMAND mode
@@ -62,7 +62,7 @@ class HayesATParser:
                 elapsed_time = time.time() - self.escape_detected_time
                 if elapsed_time >= ESCAPE_GUARD_TIME:  
                     self.mode = ParserMode.COMMAND  # Switch back to command mode
-                    self.client_out_str("OK\r\n")
+                    self.client_out_str('OK\r\n')
                     self.escape_detected_time = None  # Reset after guard time is handled
 
             await asyncio.sleep(0.1)  # Check every 100ms
@@ -71,7 +71,7 @@ class HayesATParser:
         if self.mode == ParserMode.DIALING:
             if self.dialing_task and not self.dialing_task.done():
                 self.dialing_task.cancel()  # Cancel the dialing operation
-                self.client_out_str("NO CARRIER\r\n")
+                self.client_out_str('NO CARRIER\r\n')
                 self.mode = ParserMode.COMMAND
             return 
 
@@ -117,12 +117,12 @@ class HayesATParser:
             self.client_out_str(next_char)
 
         while "AT" in self.command_buffer:
-            at_index = self.command_buffer.find("AT")
+            at_index = self.command_buffer.find('AT')
             for end_index in range(at_index + 2, len(self.command_buffer)):
                 if self.command_buffer[end_index] in ['\r', '\n']:
                     command_str = self.command_buffer[at_index:end_index]
                     if self.echo_enabled:
-                        self.client_out_str("\n")
+                        self.client_out_str('\n')
 
                     self.execute_command(command_str)
                     self.command_buffer = self.command_buffer[end_index + 1:]
@@ -131,8 +131,8 @@ class HayesATParser:
                 break
 
     def execute_command(self, command: str):
-        if not command.startswith("AT"):
-            self.client_out_str("ERROR: Invalid command prefix\r\n")
+        if not command.startswith('AT'):
+            self.client_out_str('ERROR: Invalid command prefix\r\n')
             return
 
         command_body = command[2:]
@@ -154,7 +154,7 @@ class HayesATParser:
                     break
         else:
             if self.mode == ParserMode.COMMAND:
-                self.client_out_str("OK\r\n")
+                self.client_out_str('OK\r\n')
 
     # === Handlers ===
     def handle_ATZ(self, *args):
@@ -163,7 +163,7 @@ class HayesATParser:
         self.telnet_translation_enabled = False
 
     def handle_ATI(self, *args):
-        self.client_out_str("Modem Info: Python Virtual Modem v1.0\r\n")
+        self.client_out_str('Modem Info: Python Virtual Modem v1.0\r\n')
         self.client_out_str(f"Echo enabled: {self.echo_enabled}\r\n") 
         self.client_out_str(f"Telnet translation enabled: {self.telnet_translation_enabled}\r\n")
 
@@ -171,7 +171,7 @@ class HayesATParser:
         self.s_registers[int(reg)] = int(value)
 
     def handle_ats_query(self, reg: str):
-        """Handler for querying an S-register value."""
+        """ Handler for querying an S-register value. """
         reg_num = int(reg)
         value = self.s_registers.get(reg_num, 0)  # Default to 0 if not set
         self.client_out_str(f"{value}\r\n")
@@ -188,39 +188,39 @@ class HayesATParser:
             self.writer.close()
             asyncio.create_task(self.writer.wait_closed())
             self.writer = None
-            self.client_out_str("NO CARRIER\r\n")
+            self.client_out_str('NO CARRIER\r\n')
         self.mode = ParserMode.COMMAND
 
     def handle_ATO(self, *args):
         """Handler for the ATO command to return to DATA mode."""
         if self.writer and not self.writer.is_closing():
             self.mode = ParserMode.DATA
-            self.client_out_str("CONNECT\r\n")
+            self.client_out_str('CONNECT\r\n')
         else:
-            self.client_out_str("NO CARRIER\r\n")
+            self.client_out_str('NO CARRIER\r\n')
 
     def handle_ATE(self, value: str):
         """Handler for the ATE command to toggle or query echo mode."""
-        if value == "0":
+        if value == '0':
             self.echo_enabled = False
-            self.client_out_str("OK\r\n")
-        elif value == "1":
+            self.client_out_str('OK\r\n')
+        elif value == '1':
             self.echo_enabled = True
-            self.client_out_str("OK\r\n")
-        elif value == "?":
-            echo_status = "1" if getattr(self, 'echo_enabled', True) else "0"
+            self.client_out_str('OK\r\n')
+        elif value == '?':
+            echo_status = '1' if getattr(self, 'echo_enabled', True) else '0'
             self.client_out_str(f"{echo_status}\r\n")
         else:
-            self.client_out_str("ERROR\r\n")
+            self.client_out_str('ERROR\r\n')
 
     def handle_AT_star_T(self, value: str):
         """Handler for the custom AT*T command to toggle telnet translation."""
-        if value == "1":
+        if value == '1':
             self.telnet_translation_enabled = True
-        elif value == "0":
+        elif value == '0':
             self.telnet_translation_enabled = False
         else:
-            self.client_out_str("ERROR\r\n")
+            self.client_out_str('ERROR\r\n')
 
     @staticmethod
     def _parse_address(address: str, default_port: int = 23) -> Tuple[Optional[str], Optional[int]]:
@@ -230,14 +230,14 @@ class HayesATParser:
 
         match = pattern.search(address.strip())
         if match:
-            host: str = match.group("host")
-            port: int = int(match.group("port")) if match.group("port") else default_port
+            host: str = match.group('host')
+            port: int = int(match.group('port')) if match.group('port') else default_port
             return host, port
 
         return None, None
 
     async def _handle_socket_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-        """Coroutine to read from the socket and send raw data back via client_out."""
+        """ Coroutine to read from the socket and send raw data back via client_out. """
         self.writer = writer  # Set the writer when the connection is open
         try:
             while True:
@@ -272,7 +272,7 @@ class HayesATParser:
                 reader, writer = await asyncio.wait_for(
                     asyncio.open_connection(host, port), timeout=DEFAULT_CONNECTION_TIMEOUT
                 )
-                self.client_out_str("CONNECTED\r\n")
+                self.client_out_str('CONNECTED\r\n')
                 self.mode = ParserMode.DATA
                 await self._handle_socket_connection(reader, writer)
             except asyncio.TimeoutError:

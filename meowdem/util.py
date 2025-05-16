@@ -2,11 +2,11 @@ from typing import Generator
 from enum import Enum
 
 class TelnetState(Enum):
-    DATA = "DATA"
-    IAC = "IAC"
-    IAC_OPTION = "IAC_OPTION"
-    SB = "SB"
-    SB_IAC = "SB_IAC"
+    DATA = 'DATA'
+    IAC = 'IAC'
+    IAC_OPTION = 'IAC_OPTION'
+    SB = 'SB'
+    SB_IAC = 'SB_IAC'
 
     # Telnet protocol constants
     IAC_BYTE = 255
@@ -14,6 +14,11 @@ class TelnetState(Enum):
     SE_BYTE = 240
 
 class TelnetTranslator:
+    """
+    Telnet protocol translator for handling input and output data.
+    This class is responsible for translating between raw byte data and
+    Telnet protocol commands.
+    """
     def __init__(self):
         self.state: TelnetState = TelnetState.DATA
         self.subnegotiation: bool = False
@@ -71,6 +76,9 @@ class TelnetTranslator:
     def output_translation(self, bytes_chunk: bytes) -> bytes:
         """
         Encode data into Telnet protocol format.
+
+        :param bytes_chunk: The chunk of bytes to encode.
+        :return: The Telnet encoded bytes.
         """
         output = bytearray()
         for byte in bytes_chunk:
