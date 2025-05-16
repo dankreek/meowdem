@@ -34,6 +34,8 @@ class HayesATParser:
         self.telnet_translation_enabled: bool = False
         self.echo_enabled = True
 
+        self.telnet_translator = TelnetTranslator()
+
         self.subcommand_handlers = [
             (r'^Z', self.handle_ATZ),
             (r'^I', self.handle_ATI),
@@ -54,7 +56,7 @@ class HayesATParser:
         while True:
             if self.escape_detected_time is not None:
                 elapsed_time = time.time() - self.escape_detected_time
-                if elapsed_time >= ESCAPE_GUARD_TIME:  # Use the constant here
+                if elapsed_time >= ESCAPE_GUARD_TIME:  
                     self.mode = ParserMode.COMMAND  # Switch back to command mode
                     self.client_out("OK\r\n")
                     self.escape_detected_time = None  # Reset after guard time is handled
@@ -251,7 +253,7 @@ class HayesATParser:
             self.client_out('INVALID ADDRESS. USE THE FORM <HOSTNAME>:<PORT>\r\n')
             return
 
-        self.client_out(f"Dialing {host}:{port}...\r\n")
+        self.client_out(f"DIALING {host}:{port}...\r\n")
         self.mode = ParserMode.DIALING  # Set mode to DIALING
 
         async def connect():
