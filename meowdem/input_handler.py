@@ -274,7 +274,7 @@ class HayesATParser:
                 else:
                     self.client_out_cb(data)  # Output data in latin1 encoding
         except Exception as e:
-            self.client_out_str(f"ERROR: {str(e)}\r\n")
+            pass
         finally:
             writer.close()
             await writer.wait_closed()

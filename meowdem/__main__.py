@@ -73,6 +73,7 @@ async def handle_tcp_client(reader: asyncio.StreamReader, writer: asyncio.Stream
         # Schedule drain asynchronously
         asyncio.create_task(writer.drain())
 
+    print('Connection is connected')
     parser = HayesATParser(tcp_client_out)
     try:
         while True:
