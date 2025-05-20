@@ -91,7 +91,6 @@ async def test_ATH_command(parser: tuple[HayesATParser, OutputCollector]) -> Non
 
 @pytest.mark.asyncio
 async def test_ATD_command(parser: tuple[HayesATParser, OutputCollector]) -> None:
-    """ Test the ATD command dials and returns CONNECT. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
     p, collector = parser
     collector.value = ''
 
@@ -109,8 +108,7 @@ async def test_ATD_command(parser: tuple[HayesATParser, OutputCollector]) -> Non
 
 
 @pytest.mark.asyncio
-async def test_ATD_command_failure(parser: tuple[HayesATParser, OutputCollector]) -> None:
-    """ Test the ATD command returns NO CARRIER when the connection fails. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
+async def test_ATD_connect_failure(parser: tuple[HayesATParser, OutputCollector]) -> None:
     p, collector = parser
     collector.value = ''
 
@@ -125,4 +123,21 @@ async def test_ATD_command_failure(parser: tuple[HayesATParser, OutputCollector]
                 break
             await asyncio.sleep(0.1)
         assert 'NO CARRIER' in collector.value
+
+
+@pytest.mark.asyncio
+async def test_enable_telnet_translation(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    p, collector = parser
+    collector.value = ''
+    await asyncio.to_thread(p.receive, b'AT*T1\r')
+    assert p.telnet_translation_enabled is True
+
+
+@pytest.mark.asyncio
+async def test_disable_telnet_translation(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    p, collector = parser
+    p.telnet_translation_enabled = True
+    collector.value = ''
+    await asyncio.to_thread(p.receive, b'AT*T0\r')
+    assert p.telnet_translation_enabled is False
 
