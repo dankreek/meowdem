@@ -20,21 +20,22 @@ class HayesATParser:
         self.command_prefix = 'AT'
         self.mode = ParserMode.COMMAND  
 
+        self.writer: Optional[asyncio.StreamWriter] = None  # Store the writer, None if no connection is open
+        self.dialing_task: Optional[asyncio.Task] = None  # Store the dialing task
+
+        self.telnet_translator = TelnetTranslator()
+        self.phonebook: dict[int, tuple[str, int]] = {}  # Phonebook entries
+
         # Variables to handle escape from DATA to COMMAND mode
         self.escape_detected_time: Optional[float] = None
         self.escape_guard_time = ESCAPE_GUARD_TIME  # Use the constant here
         self.client_out_cb = client_output_cb  # Callback for client output binary data
         self.guard_time_task = asyncio.create_task(self._monitor_guard_time())
         
-        self.writer: Optional[asyncio.StreamWriter] = None  # Store the writer, None if no connection is open
-        self.dialing_task: Optional[asyncio.Task] = None  # Store the dialing task
-
         # Modem state variables
         self.s_registers = {}
         self.telnet_translation_enabled: bool = False
         self.echo_enabled = True
-
-        self.telnet_translator = TelnetTranslator()
 
         self.subcommand_handlers = [
             (r'^Z', self.handle_ATZ),
@@ -50,6 +51,7 @@ class HayesATParser:
             (r'^E(0|1|\?)', self.handle_ATE),
             (r'^\*T(0|1)', self.handle_AT_star_T),
             (r'^\?', self.handle_ATQMARK),  # Add AT? handler
+            (r'^&Z(\d+)=(.+)', self.handle_AT_amp_Z),
         ]
 
     def client_out_str(self, data: str):
@@ -80,7 +82,7 @@ class HayesATParser:
             return 
 
         for byte in data:
-            char = chr(byte)
+            char = chr(byte).upper()
             self._receive_char(byte)
 
     def _receive_char(self, byte: int):
@@ -248,6 +250,18 @@ class HayesATParser:
             'AT?            - This help\r\n'
         )
         self.client_out_str(help_text)
+
+    def handle_AT_amp_Z(self, entry_num: str, address: str) -> None:
+        """ Handler for the AT&Z<n>=host:port command to add a phonebook entry. Port is optional. """
+        num: int = int(entry_num)
+        host, port = self._parse_address(address)
+        if host is None:
+            self.client_out_str('ERROR: INVALID ADDRESS. USE THE FORM <HOST>[:<PORT>]\r\n')
+            return
+        if port is None:
+            port = 23
+        self.phonebook[num] = (host, port)
+        self.client_out_str(f'PHONEBOOK ENTRY {num} SET TO {host}:{port}\r\n')
 
     @staticmethod
     def _parse_address(address: str, default_port: int = 23) -> Tuple[Optional[str], Optional[int]]:
