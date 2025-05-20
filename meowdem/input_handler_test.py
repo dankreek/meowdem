@@ -161,3 +161,28 @@ async def test_ATE1_command(parser: tuple[HayesATParser, OutputCollector]) -> No
     assert p.echo_enabled is True
     assert 'OK' in collector.value
 
+
+@pytest.mark.asyncio
+async def test_ATO_command(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    """ Test the ATO command returns CONNECT and sets mode to DATA if writer is present. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
+    from meowdem.input_handler import ParserMode
+    p, collector = parser
+    p.writer = MockStreamWriter()  # type: ignore
+    p.mode = ParserMode.COMMAND
+    collector.value = ''
+    await asyncio.to_thread(p.receive, b'ATO\r')
+    assert 'CONNECT' in collector.value
+    assert p.mode == ParserMode.DATA
+
+@pytest.mark.asyncio
+async def test_ATO_command_no_carrier(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    """ Test the ATO command returns NO CARRIER if writer is None. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
+    from meowdem.input_handler import ParserMode
+    p, collector = parser
+    p.writer = None
+    p.mode = ParserMode.COMMAND
+    collector.value = ''
+    await asyncio.to_thread(p.receive, b'ATO\r')
+    assert 'NO CARRIER' in collector.value
+    assert p.mode == ParserMode.COMMAND
+
