@@ -12,6 +12,15 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "async-generator"
+version = "1.10"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/b6/6fa6b3b598a03cba5e80f829e0dadbb49d7645f523d209b2fb7ea0bbb02a/async_generator-1.10.tar.gz", hash = "sha256:6ebb3d106c12920aaae42ccb6f787ef5eefdcdd166ea3d628fa8476abe712144", size = 29870, upload-time = "2018-08-01T03:36:21.69Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/71/52/39d20e03abd0ac9159c162ec24b93fbcaa111e8400308f2465432495ca2b/async_generator-1.10-py3-none-any.whl", hash = "sha256:01c7bf666359b4967d2cda0000cc2e4af16a0ae098cbffcb8472fb9e8ad6585b", size = 18857, upload-time = "2018-08-01T03:36:20.029Z" },
+]
+
+[[package]]
 name = "atomicwrites"
 version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -547,6 +556,12 @@ test = [
     { name = "pytest", version = "7.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.6.*'" },
     { name = "pytest", version = "7.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.7.*'" },
     { name = "pytest", version = "8.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.8'" },
+    { name = "pytest-asyncio", version = "0.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.5'" },
+    { name = "pytest-asyncio", version = "0.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.5.*'" },
+    { name = "pytest-asyncio", version = "0.16.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.6.*'" },
+    { name = "pytest-asyncio", version = "0.21.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.7.*'" },
+    { name = "pytest-asyncio", version = "0.24.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.8.*'" },
+    { name = "pytest-asyncio", version = "0.26.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "pytest-cov", version = "2.12.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.6'" },
     { name = "pytest-cov", version = "4.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.6.*'" },
     { name = "pytest-cov", version = "4.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.7.*'" },
@@ -559,6 +574,7 @@ test = [
 [package.metadata.requires-dev]
 test = [
     { name = "pytest", specifier = ">=4.6.11" },
+    { name = "pytest-asyncio", specifier = ">=0.6.0" },
     { name = "pytest-cov", specifier = ">=2.12.1" },
 ]
 
@@ -865,6 +881,100 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-asyncio"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.5'",
+]
+dependencies = [
+    { name = "pytest", version = "4.6.11", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.5'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/66/ea48100bc342752732f1cb5fc8157e4ea1fe30e05733bcd265d53538c31d/pytest-asyncio-0.6.0.tar.gz", hash = "sha256:e5c6786ece4b3bbb0cca1bf68bf089756a62760e3764dc84eaee39bfab70289b", size = 10912, upload-time = "2017-05-28T22:19:49.671Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/64/388b120592a621c3b746e3862b851109e21fefcbfa64f998948d9241d720/pytest_asyncio-0.6.0-py3-none-any.whl", hash = "sha256:f0aba2256dab4e7d8adfcba329937a227709b303a9a55d2ff94b0658f685255d", size = 14635, upload-time = "2017-05-28T22:19:48.078Z" },
+]
+
+[[package]]
+name = "pytest-asyncio"
+version = "0.14.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version == '3.5.*'",
+]
+dependencies = [
+    { name = "async-generator", marker = "python_full_version == '3.5.*'" },
+    { name = "pytest", version = "6.1.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.5.*'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/65/09/9472d4db0625cf56d40f4e405f955faf6469be00858a273b71332f3fcd1f/pytest-asyncio-0.14.0.tar.gz", hash = "sha256:9882c0c6b24429449f5f969a5158b528f39bde47dc32e85b9f0403965017e700", size = 13512, upload-time = "2020-06-23T22:10:29.959Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/82/b62efae871e8a543295c8c280b04a2da2ef3f6dd9bb830f6a1acc7145ad2/pytest_asyncio-0.14.0-py3-none-any.whl", hash = "sha256:2eae1e34f6c68fc0a9dc12d4bea190483843ff4708d24277c41568d6b6044f1d", size = 11934, upload-time = "2020-06-23T22:10:28.089Z" },
+]
+
+[[package]]
+name = "pytest-asyncio"
+version = "0.16.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.6.8' and python_full_version < '3.7'",
+    "python_full_version >= '3.6' and python_full_version < '3.6.8'",
+]
+dependencies = [
+    { name = "pytest", version = "7.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.6.*'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/89/53/8844d99d5343eecbb6d740d708581fbf63cefd560c07c7164b12691e54eb/pytest-asyncio-0.16.0.tar.gz", hash = "sha256:7496c5977ce88c34379df64a66459fe395cd05543f0a2f837016e7144391fcfb", size = 12095, upload-time = "2021-10-15T23:29:52.631Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/17/d0/d9bd672577857bb59004d7a0902abb5f27770c1d234860a08898eb058bd2/pytest_asyncio-0.16.0-py3-none-any.whl", hash = "sha256:5f2a21273c47b331ae6aa5b36087047b4899e40f03f18397c0e65fa5cca54e9b", size = 12119, upload-time = "2021-10-15T23:29:49.06Z" },
+]
+
+[[package]]
+name = "pytest-asyncio"
+version = "0.21.2"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version == '3.7.*'",
+]
+dependencies = [
+    { name = "pytest", version = "7.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.7.*'" },
+    { name = "typing-extensions", version = "4.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.7.*'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ae/53/57663d99acaac2fcdafdc697e52a9b1b7d6fcf36616281ff9768a44e7ff3/pytest_asyncio-0.21.2.tar.gz", hash = "sha256:d67738fc232b94b326b9d060750beb16e0074210b98dd8b58a5239fa2a154f45", size = 30656, upload-time = "2024-04-29T13:23:24.738Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/ce/1e4b53c213dce25d6e8b163697fbce2d43799d76fa08eea6ad270451c370/pytest_asyncio-0.21.2-py3-none-any.whl", hash = "sha256:ab664c88bb7998f711d8039cacd4884da6430886ae8bbd4eded552ed2004f16b", size = 13368, upload-time = "2024-04-29T13:23:23.126Z" },
+]
+
+[[package]]
+name = "pytest-asyncio"
+version = "0.24.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version == '3.8.*'",
+]
+dependencies = [
+    { name = "pytest", version = "8.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.8.*'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/52/6d/c6cf50ce320cf8611df7a1254d86233b3df7cc07f9b5f5cbcb82e08aa534/pytest_asyncio-0.24.0.tar.gz", hash = "sha256:d081d828e576d85f875399194281e92bf8a68d60d72d1a2faf2feddb6c46b276", size = 49855, upload-time = "2024-08-22T08:03:18.145Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/96/31/6607dab48616902f76885dfcf62c08d929796fc3b2d2318faf9fd54dbed9/pytest_asyncio-0.24.0-py3-none-any.whl", hash = "sha256:a811296ed596b69bf0b6f3dc40f83bcaf341b155a269052d82efa2b25ac7037b", size = 18024, upload-time = "2024-08-22T08:03:15.536Z" },
+]
+
+[[package]]
+name = "pytest-asyncio"
+version = "0.26.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.9'",
+]
+dependencies = [
+    { name = "pytest", version = "8.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+    { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.9.*'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8e/c4/453c52c659521066969523e87d85d54139bbd17b78f09532fb8eb8cdb58e/pytest_asyncio-0.26.0.tar.gz", hash = "sha256:c4df2a697648241ff39e7f0e4a73050b03f123f760673956cf0d72a4990e312f", size = 54156, upload-time = "2025-03-25T06:22:28.883Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/7f/338843f449ace853647ace35870874f69a764d251872ed1b4de9f234822c/pytest_asyncio-0.26.0-py3-none-any.whl", hash = "sha256:7b51ed894f4fbea1340262bdae5135797ebbe21d8638978e35d31c6d19f72fb0", size = 19694, upload-time = "2025-03-25T06:22:27.807Z" },
+]
+
+[[package]]
 name = "pytest-cov"
 version = "2.12.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1082,6 +1192,18 @@ resolution-markers = [
 sdist = { url = "https://files.pythonhosted.org/packages/3c/8b/0111dd7d6c1478bf83baa1cab85c686426c7a6274119aceb2bd9d35395ad/typing_extensions-4.7.1.tar.gz", hash = "sha256:b75ddc264f0ba5615db7ba217daeb99701ad295353c45f9e95963337ceeeffb2", size = 72876, upload-time = "2023-07-02T14:20:55.045Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ec/6b/63cc3df74987c36fe26157ee12e09e8f9db4de771e0f3404263117e75b95/typing_extensions-4.7.1-py3-none-any.whl", hash = "sha256:440d5dd3af93b060174bf433bccd69b0babc3b15b1a8dca43789fd7f61514b36", size = 33232, upload-time = "2023-07-02T14:20:53.275Z" },
+]
+
+[[package]]
+name = "typing-extensions"
+version = "4.13.2"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.9'",
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f6/37/23083fcd6e35492953e8d2aaaa68b860eb422b34627b13f2ce3eb6106061/typing_extensions-4.13.2.tar.gz", hash = "sha256:e6c81219bd689f51865d9e372991c540bda33a0379d5573cddb9a3a23f7caaef", size = 106967, upload-time = "2025-04-10T14:19:05.416Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/54/b1ae86c0973cc6f0210b53d508ca3641fb6d0c56823f288d108bc7ab3cc8/typing_extensions-4.13.2-py3-none-any.whl", hash = "sha256:a439e7c04b49fec3e5d3e2beaa21755cadbbdc391694e28ccdd36ca4a1408f8c", size = 45806, upload-time = "2025-04-10T14:19:03.967Z" },
 ]
 
 [[package]]

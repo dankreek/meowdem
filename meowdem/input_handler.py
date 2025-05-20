@@ -135,7 +135,11 @@ class HayesATParser:
                 break
 
     def execute_command(self, command: str):
-        if not command.startswith('AT'):
+        """ Execute a parsed AT command.  """
+        # Remove spaces between 'AT' and the rest of the command for compatibility
+        if command.startswith('AT'):
+            command = 'AT' + command[2:].lstrip()
+        else:
             self.client_out_str('ERROR: Invalid command prefix\r\n')
             return
 

@@ -12,5 +12,6 @@ dependencies = []
 [dependency-groups]
 test = [
     "pytest>=4.6.11",
+    "pytest-asyncio>=0.6.0",
     "pytest-cov>=2.12.1",
 ]

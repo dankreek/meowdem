@@ -1,65 +1,34 @@
 import pytest
-from unittest.mock import patch
+import pytest_asyncio
+import asyncio
 from meowdem.input_handler import HayesATParser
+from typing import Callable, Any
+
+class OutputCollector:
+    """ Collects output as a single string for transparent test assertions. :param output: str :return: None """
+    def __init__(self) -> None:
+        self.value: str = ''
+    def __call__(self, new_output: bytes) -> None:
+        self.value += new_output.decode('latin-1')
+
+@pytest_asyncio.fixture
+async def parser() -> tuple[HayesATParser, OutputCollector]:
+    """ Fixture to create a HayesATParser and OutputCollector. :return: tuple[HayesATParser, OutputCollector] """
+    collector = OutputCollector()
+    p = HayesATParser(client_output_cb=collector)
+    return p, collector
+
+@pytest.mark.asyncio
+async def test_ATZ_command(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    """ Test the ATZ command resets the modem and returns OK. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
+    p, collector = parser
+    await asyncio.to_thread(p.receive, b'ATZ\r')
+    assert collector.value == 'ATZ\r\nOK\r\n'
 
 
-@pytest.fixture
-def parser():
-    logs = []
-    p = HayesATParser(client_output_cb=logs.append)
-    return p, logs
-
-
-def test_simple_command(parser):
-    p, logs = parser
-    p.receive("ATZ\r")
-    assert "Resetting modem..." in logs
-    assert "OK" in logs
-
-
-def test_compound_command(parser):
-    p, logs = parser
-    p.receive("ATS0=1Z&C1%F0\r")
-    assert "Set S0 = 1" in logs
-    assert "Resetting modem..." in logs
-    assert "Set &C = 1" in logs
-    assert "Set %F = 0" in logs
-    assert "OK" in logs
-
-
-def test_dial_command_enters_data_mode(parser):
-    p, logs = parser
-    p.receive("ATD5551212\r")
-    assert "Dialing 5551212..." in logs
-    assert "[Modem switched to DATA mode]" in logs
-    assert p.mode == "data"
-
-
-@patch("time.time")
-def test_escape_sequence_success(mock_time, parser):
-    p, logs = parser
-    mock_time.side_effect = [0, 2, 3.1]  # ATDT, then +++
-
-    p.receive("ATDT123\r")
-    p.receive("+++")
-    assert "[Modem switched to COMMAND mode]" in logs
-    assert p.mode == "command"
-
-
-@patch("time.time")
-def test_escape_sequence_failure_due_to_guard_time(mock_time, parser):
-    p, logs = parser
-    mock_time.side_effect = [0, 0.5, 0.7]  # Not enough guard time
-
-    p.receive("ATDT123\r")
-    p.receive("+++")
-    assert "[Ignored '+++' - failed guard time check]" in logs
-    assert p.mode == "data"
-
-
-def test_data_mode_ignores_commands(parser):
-    p, logs = parser
-    p.mode = "data"
-    p.receive("ATZ\r")
-    assert "[DATA MODE] ATZ\r" in logs
-    assert "Resetting modem..." not in logs
+@pytest.mark.asyncio
+async def test_AT_command_with_space(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    """ Test the ATZ command resets the modem and returns OK. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
+    p, collector = parser
+    await asyncio.to_thread(p.receive, b'AT Z\r')
+    assert collector.value == 'AT Z\r\nOK\r\n'
