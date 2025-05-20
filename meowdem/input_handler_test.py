@@ -141,3 +141,23 @@ async def test_disable_telnet_translation(parser: tuple[HayesATParser, OutputCol
     await asyncio.to_thread(p.receive, b'AT*T0\r')
     assert p.telnet_translation_enabled is False
 
+
+@pytest.mark.asyncio
+async def test_ATE0_command(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    p, collector = parser
+    p.echo_enabled = True
+    collector.value = ''
+    await asyncio.to_thread(p.receive, b'ATE0\r')
+    assert p.echo_enabled is False
+    assert 'OK' in collector.value
+
+
+@pytest.mark.asyncio
+async def test_ATE1_command(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    p, collector = parser
+    p.echo_enabled = False
+    collector.value = ''
+    await asyncio.to_thread(p.receive, b'ATE1\r')
+    assert p.echo_enabled is True
+    assert 'OK' in collector.value
+
