@@ -185,4 +185,3 @@ async def test_ATO_command_no_carrier(parser: tuple[HayesATParser, OutputCollect
     await asyncio.to_thread(p.receive, b'ATO\r')
     assert 'NO CARRIER' in collector.value
     assert p.mode == ParserMode.COMMAND
-

@@ -6,3 +6,11 @@ of single-line docstrings.
 Use type hints for all function and method arguments and return values. 
 
 Add two lines between top-level functions and class definitions.
+
+# Testing
+
+Run unit tests with:
+
+```bash
+uv run pytest -v
+```

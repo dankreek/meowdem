@@ -24,7 +24,7 @@ class HayesATParser:
         self.dialing_task: Optional[asyncio.Task] = None  # Store the dialing task
 
         self.telnet_translator = TelnetTranslator()
-        self.phonebook: dict[int, tuple[str, int]] = {}  # Phonebook entries
+        self.phonebook: dict[int, tuple[str, Optional[int]]] = {}  # Phonebook entries
 
         # Variables to handle escape from DATA to COMMAND mode
         self.escape_detected_time: Optional[float] = None
@@ -42,6 +42,10 @@ class HayesATParser:
             (r'^I', self.handle_ATI),
             (r'^S(\d+)=(\d+)', self.handle_ats_set),
             (r'^S(\d+)\?', self.handle_ats_query),
+            (r'^&Z(\d+)=([^\r\n]+)', self.handle_AT_amp_Z),
+            (r'^&Z(\d+)\?', self.handle_AT_amp_Z_query),
+            (r'^&Z=([^\r\n]+)', lambda address: self.handle_AT_amp_Z('0', address)),
+            (r'^&Z\?', lambda: self.handle_AT_amp_Z_query('0')),
             (r'^&([A-Z])(\d+)', self.handle_amp_command),
             (r'^%([A-Z])(\d+)', self.handle_pct_command),
             (r'^D[T|P](.+)', self.handle_ATD),
@@ -50,8 +54,7 @@ class HayesATParser:
             (r'^O', self.handle_ATO),
             (r'^E(0|1|\?)', self.handle_ATE),
             (r'^\*T(0|1)', self.handle_AT_star_T),
-            (r'^\?', self.handle_ATQMARK),  # Add AT? handler
-            (r'^&Z(\d+)=(.+)', self.handle_AT_amp_Z),
+            (r'^\?', self.handle_ATQMARK),
         ]
 
     def client_out_str(self, data: str):
@@ -252,16 +255,36 @@ class HayesATParser:
         self.client_out_str(help_text)
 
     def handle_AT_amp_Z(self, entry_num: str, address: str) -> None:
-        """ Handler for the AT&Z<n>=host:port command to add a phonebook entry. Port is optional. """
+        """ Handler for the AT&Z<n>=host[:port] command to add a phonebook entry. Port is optional. """
         num: int = int(entry_num)
-        host, port = self._parse_address(address)
-        if host is None:
-            self.client_out_str('ERROR: INVALID ADDRESS. USE THE FORM <HOST>[:<PORT>]\r\n')
-            return
-        if port is None:
-            port = 23
-        self.phonebook[num] = (host, port)
-        self.client_out_str(f'PHONEBOOK ENTRY {num} SET TO {host}:{port}\r\n')
+        # Accept host or host:port
+        if ':' in address:
+            host, port = self._parse_address(address)
+            if host is None:
+                self.client_out_str('ERROR: INVALID ADDRESS. USE THE FORM <HOST>[:<PORT>]\r\n')
+                return
+            self.phonebook[num] = (host, port)
+        else:
+            # Only host provided, store with default port 23
+            host = address.strip()
+            if not host:
+                self.client_out_str('ERROR: INVALID ADDRESS. USE THE FORM <HOST>[:<PORT>]\r\n')
+                return
+            self.phonebook[num] = (host, None)
+
+    # Add handler for AT&Z<n>? query
+    def handle_AT_amp_Z_query(self, entry_num: str) -> None:
+        """ Handler for the AT&Z<n>? command to query a phonebook entry. """
+        num: int = int(entry_num)
+        entry = self.phonebook.get(num)
+        if entry:
+            host, port = entry
+            if port is not None:
+                self.client_out_str(f'{host}:{port}\r\n')
+            else:
+                self.client_out_str(f'{host}\r\n')
+        else:
+            self.client_out_str('NOT SET\r\n')
 
     @staticmethod
     def _parse_address(address: str, default_port: int = 23) -> Tuple[Optional[str], Optional[int]]:
