@@ -1,6 +1,7 @@
 import pytest
 import pytest_asyncio
 import asyncio
+import unittest.mock
 from meowdem.input_handler import HayesATParser
 
 
@@ -12,7 +13,7 @@ class OutputCollector:
         self.value += new_output.decode('latin-1')
 
 
-class DummyWriter:
+class MockStreamWriter:
     def write(self, data: bytes) -> None:
         pass
     def drain(self) -> None:
@@ -23,6 +24,12 @@ class DummyWriter:
         pass
     async def wait_closed(self) -> None:
         pass
+
+
+class MockStreamReader:
+    async def read(self, n: int) -> bytes:
+        await asyncio.sleep(0.01)
+        return b''
 
 
 @pytest_asyncio.fixture
@@ -61,7 +68,7 @@ async def test_escape_data_mode_with_plus(parser: tuple[HayesATParser, OutputCol
     """ Test that sending '+++' escapes data mode and returns OK. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
     from meowdem.input_handler import ParserMode
     p, collector = parser
-    p.writer = DummyWriter()  # type: ignore
+    p.writer = MockStreamWriter()  # type: ignore
     p.mode = ParserMode.DATA
     collector.value = ''
     await asyncio.to_thread(p.receive, b'+++')
@@ -74,10 +81,48 @@ async def test_ATH_command(parser: tuple[HayesATParser, OutputCollector]) -> Non
     """ Test the ATH command hangs up and returns NO CARRIER. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
     from meowdem.input_handler import ParserMode
     p, collector = parser
-    p.writer = DummyWriter()  # type: ignore
+    p.writer = MockStreamWriter()  # type: ignore
     p.mode = ParserMode.COMMAND
     collector.value = ''
     p.receive(b'ATH\r')
     assert 'NO CARRIER' in collector.value
     assert p.writer is None
+
+
+@pytest.mark.asyncio
+async def test_ATD_command(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    """ Test the ATD command dials and returns CONNECT. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
+    p, collector = parser
+    collector.value = ''
+
+    async def dummy_open_connection(*args, **kwargs):
+        return MockStreamReader(), MockStreamWriter()
+
+    with unittest.mock.patch('asyncio.open_connection', dummy_open_connection):
+        p.receive(b'ATD127.0.0.1:2323\r')
+        # Wait up to 2 seconds for CONNECT
+        for _ in range(20):
+            if 'CONNECTED' in collector.value:
+                break
+            await asyncio.sleep(0.1)
+        assert 'CONNECTED' in collector.value
+
+
+@pytest.mark.asyncio
+async def test_ATD_command_failure(parser: tuple[HayesATParser, OutputCollector]) -> None:
+    """ Test the ATD command returns NO CARRIER when the connection fails. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
+    p, collector = parser
+    collector.value = ''
+
+    async def dummy_open_connection(*args, **kwargs):
+        raise OSError('connection failed')
+
+    with unittest.mock.patch('asyncio.open_connection', dummy_open_connection):
+        p.receive(b'ATD127.0.0.1:2323\r')
+        # Wait up to 2 seconds for NO CARRIER
+        for _ in range(20):
+            if 'NO CARRIER' in collector.value:
+                break
+            await asyncio.sleep(0.1)
+        assert 'NO CARRIER' in collector.value
 
