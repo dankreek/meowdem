@@ -5,6 +5,7 @@ import sys
 import termios
 import time
 import tty
+import argparse
 
 from copy import deepcopy
 from enum import Enum
@@ -559,16 +560,41 @@ def stdio_client_task() -> asyncio.Task:
     parser = HayesATParser(send_to_stdout)
     return asyncio.create_task(read_from_stdin(parser))
 
+def tcp_client_task(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> asyncio.Task:
+    """ Return an asyncio Task for handling a TCP client. 
+    :param reader: StreamReader for the client.
+    :param writer: StreamWriter for the client.
+    :return: The asyncio Task handling the client.
+    """
+    return asyncio.create_task(handle_tcp_client(reader, writer))
 
 async def main() -> None:
     """ Main entry point: handles both stdin and TCP connections. 
     :return: None
     """
-    server = await asyncio.start_server(handle_tcp_client, '0.0.0.0', 2323)
-    async with server:
-        stdin_task = stdio_client_task()
-        await server.serve_forever()
-        await stdin_task
+    parser = argparse.ArgumentParser(
+        description='Meowdem: A Hayes-compatible modem emulator supporting AT commands, TCP, and Telnet translation.',
+        epilog='Example usage: python meowdem.py -c 2323.'
+    )
+    parser.add_argument(
+        '-c', '--tcp-client-port',
+        type=int,
+        default=None,
+        help='Port to listen for TCP client connections (optional, e.g., 2323). If omitted, only stdin is used.'
+    )
+    # Removed explicit -h/--help argument to avoid duplicate option error
+    args = parser.parse_args()
+
+    tasks = []
+    tasks.append(stdio_client_task())
+
+    if args.tcp_client_port is not None:
+        server = await asyncio.start_server(handle_tcp_client, '0.0.0.0', args.tcp_client_port)
+        tasks.append(server.serve_forever())
+        async with server:
+            await asyncio.gather(*tasks)
+    else:
+        await asyncio.gather(*tasks)
 
 
 if __name__ == '__main__':
