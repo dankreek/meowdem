@@ -2,8 +2,8 @@ import pytest
 import pytest_asyncio
 import asyncio
 import unittest.mock
-from meowdem.input_handler import HayesATParser
 
+from .meowdem import HayesATParser
 
 class OutputCollector:
     """ Collects output as a single string for transparent test assertions. :param output: str :return: None """
@@ -66,7 +66,7 @@ async def test_AT_command_with_space(parser: tuple[HayesATParser, OutputCollecto
 @pytest.mark.asyncio
 async def test_escape_data_mode_with_plus(parser: tuple[HayesATParser, OutputCollector]) -> None:
     """ Test that sending '+++' escapes data mode and returns OK. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
-    from meowdem.input_handler import ParserMode
+    from .meowdem import ParserMode
     p, collector = parser
     p.writer = MockStreamWriter()  # type: ignore
     p.mode = ParserMode.DATA
@@ -79,7 +79,7 @@ async def test_escape_data_mode_with_plus(parser: tuple[HayesATParser, OutputCol
 @pytest.mark.asyncio
 async def test_ATH_command(parser: tuple[HayesATParser, OutputCollector]) -> None:
     """ Test the ATH command hangs up and returns NO CARRIER. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
-    from meowdem.input_handler import ParserMode
+    from .meowdem import ParserMode
     p, collector = parser
     p.writer = MockStreamWriter()  # type: ignore
     p.mode = ParserMode.COMMAND
@@ -165,7 +165,7 @@ async def test_ATE1_command(parser: tuple[HayesATParser, OutputCollector]) -> No
 @pytest.mark.asyncio
 async def test_ATO_command(parser: tuple[HayesATParser, OutputCollector]) -> None:
     """ Test the ATO command returns CONNECT and sets mode to DATA if writer is present. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
-    from meowdem.input_handler import ParserMode
+    from .meowdem import ParserMode
     p, collector = parser
     p.writer = MockStreamWriter()  # type: ignore
     p.mode = ParserMode.COMMAND
@@ -177,7 +177,7 @@ async def test_ATO_command(parser: tuple[HayesATParser, OutputCollector]) -> Non
 @pytest.mark.asyncio
 async def test_ATO_command_no_carrier(parser: tuple[HayesATParser, OutputCollector]) -> None:
     """ Test the ATO command returns NO CARRIER if writer is None. :param parser: tuple[HayesATParser, OutputCollector] :return: None """
-    from meowdem.input_handler import ParserMode
+    from .meowdem import ParserMode
     p, collector = parser
     p.writer = None
     p.mode = ParserMode.COMMAND
