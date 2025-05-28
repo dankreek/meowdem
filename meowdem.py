@@ -1,5 +1,5 @@
-
 import asyncio
+import logging
 import re
 import sys
 import termios
@@ -7,8 +7,15 @@ import time
 import tty
 
 from copy import deepcopy
-from typing import AsyncGenerator, Callable, Optional, Tuple, Callable, Generator
 from enum import Enum
+from typing import AsyncGenerator, Callable, Optional, Tuple, Callable
+
+# Setup logging to output to stderr
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s',
+    stream=sys.stderr
+)
 
 # Timeout constant
 DEFAULT_CONNECTION_TIMEOUT = 30  # Timeout in seconds
@@ -526,7 +533,8 @@ async def handle_tcp_client(reader: asyncio.StreamReader, writer: asyncio.Stream
         # Schedule drain asynchronously
         asyncio.create_task(writer.drain())
 
-    print('Connection is connected')
+    logging.info('Connection is connected')
+
     parser = HayesATParser(tcp_client_out)
     try:
         while True:
