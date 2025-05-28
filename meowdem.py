@@ -514,10 +514,6 @@ async def stdin_without_echo() -> AsyncGenerator[str, None]:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 
-def client_out(data: bytes):
-    print(data.decode('latin1'), end='', flush=True)
-
-
 async def handle_tcp_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     """ Async handler for each TCP client using HayesATParser. 
     :param reader: StreamReader for the client.
@@ -560,6 +556,9 @@ async def main() -> None:
     """ Main entry point: handles both stdin and TCP connections. 
     :return: None
     """
+    def client_out(data: bytes):
+        print(data.decode('latin1'), end='', flush=True)
+
     parser = HayesATParser(client_out)
     server = await asyncio.start_server(handle_tcp_client, '0.0.0.0', 2323)
     async with server:
