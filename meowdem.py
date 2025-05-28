@@ -582,7 +582,6 @@ async def main() -> None:
         default=None,
         help='Port to listen for TCP client connections (optional, e.g., 2323). If omitted, only stdin is used.'
     )
-    # Removed explicit -h/--help argument to avoid duplicate option error
     args = parser.parse_args()
 
     tasks = []
