@@ -1,7 +1,7 @@
 # Meowdem
 <img src="doc/meowdem-logo.png" alt="Meowdem Logo" width="200">
 
-A Hayes-compatible software modem emulator for really weird nerds. Meowdem emulates a classic modem interface, supporting AT commands, TCP connections, and Telnet protocol translation. It is written in Python and is intended for use on the MiSTer FPGA as a more fully featured alternative to its the standard modem emulation.
+A Hayes-compatible software modem emulator for really weird nerds. Meowdem emulates a classic modem interface, supporting AT commands, TCP connections, and Telnet protocol translation. It is written in Python and is intended for use on the [MiSTer FPGA](https://misterfpga.org/) as a more fully featured alternative to its the standard modem emulation.
 
 ## Features
 
@@ -27,7 +27,7 @@ Clone the repository:
  cd meowdem
 ```
 
-Create a virtual environment and install dependencies:
+Create a virtual environment and install test dependencies:
 
 ```zsh
 uv venv
