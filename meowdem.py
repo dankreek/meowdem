@@ -544,25 +544,29 @@ async def handle_tcp_client(reader: asyncio.StreamReader, writer: asyncio.Stream
         writer.close()
         await writer.wait_closed()
 
-async def _stdin_loop(parser: HayesATParser) -> None:
-    """ Read from stdin and send to parser. 
-    :param parser: HayesATParser instance.
-    :return: None
+
+def stdio_client_task() -> asyncio.Task:
+    """ Start the stdin processing loop as a background task. 
+    :return: The asyncio Task handling stdin.
     """
-    async for next_char in stdin_without_echo():
-        parser.receive(next_char.encode('latin1'))
+    def send_to_stdout(data: bytes) -> None:
+        print(data.decode('latin1'), end='', flush=True)
+
+    async def read_from_stdin(parser: HayesATParser) -> None:
+        async for next_char in stdin_without_echo():
+            parser.receive(next_char.encode('latin1'))
+
+    parser = HayesATParser(send_to_stdout)
+    return asyncio.create_task(read_from_stdin(parser))
+
 
 async def main() -> None:
     """ Main entry point: handles both stdin and TCP connections. 
     :return: None
     """
-    def client_out(data: bytes):
-        print(data.decode('latin1'), end='', flush=True)
-
-    parser = HayesATParser(client_out)
     server = await asyncio.start_server(handle_tcp_client, '0.0.0.0', 2323)
     async with server:
-        stdin_task = asyncio.create_task(_stdin_loop(parser))
+        stdin_task = stdio_client_task()
         await server.serve_forever()
         await stdin_task
 
