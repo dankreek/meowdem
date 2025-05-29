@@ -576,6 +576,15 @@ def serial_client_task(serial_port_path: str, baudrate: int = 9600) -> asyncio.T
     if hasattr(termios, 'CRTSCTS'):
         attrs[2] |= termios.CRTSCTS
 
+    # Turn echo off (disable ECHO flag)
+    if hasattr(termios, 'ECHO'):
+        attrs[3] &= ~termios.ECHO
+
+    # Turn off input and output buffering (set VMIN=1, VTIME=0)
+    if hasattr(termios, 'VMIN') and hasattr(termios, 'VTIME'):
+        attrs[6][termios.VMIN] = 1
+        attrs[6][termios.VTIME] = 0
+
     termios.tcsetattr(serial_fd, termios.TCSANOW, attrs)
 
     # Set the CTS modem bit high after enabling hardware flow control
