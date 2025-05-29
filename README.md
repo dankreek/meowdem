@@ -27,16 +27,20 @@ Clone the repository:
  cd meowdem
 ```
 
-Create a virtual environment and install test dependencies:
-
-```zsh
-uv venv
-uv sync
-```
 
 ## Usage
 
-You can run Meowdem in two modes:
+You can run Meowdem in several modes, using command line options:
+
+### Command Line Options
+
+```
+python meowdem.py [options]
+```
+
+- `-c`, `--tcp-client-port <PORT>`: Listen for incoming TCP client connections on the specified port (e.g., 2323). If omitted, only stdin/stdout mode is used.
+- `-s`, `--serial-port <DEVICE>`: Attach to a serial port device (e.g., `/dev/ttyS0`). If specified, Meowdem will use this serial port as a client interface.
+- `--serial-baud <BAUD>`, `-b <BAUD>`: Set the baud rate for the serial port (default: 9600). Only used if `--serial-port` is specified.
 
 ### 1. Stdin/Stdout Mode
 
@@ -55,6 +59,16 @@ python meowdem.py -c 2323
 ```
 
 This will listen on TCP port 2323 for incoming connections.
+
+### 3. Serial Port Mode
+
+Connect to a serial port device (e.g., for use with hardware):
+
+```zsh
+python meowdem.py -s /dev/ttyS0 --serial-baud 19200
+```
+
+This will use `/dev/ttyS0` at 19200 baud as the modem interface.
 
 ## Supported AT Commands
 
@@ -76,6 +90,15 @@ This will listen on TCP port 2323 for incoming connections.
 ## Testing
 
 To run the unit tests:
+
+Create a virtual environment and install test dependencies:
+
+```zsh
+uv venv
+uv sync
+```
+
+Execute tests:
 
 ```zsh
 uv run pytest -v

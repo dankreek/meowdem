@@ -610,6 +610,7 @@ async def main() -> None:
     )
     parser.add_argument(
         '--serial-baud',
+        '-b',
         type=int,
         default=9600,
         help='Baud rate for the serial port (default: 9600). Only used if --serial-port is specified.'
