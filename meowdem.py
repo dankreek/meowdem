@@ -571,11 +571,17 @@ def serial_client_task(serial_port_path: str, baudrate: int = 9600) -> asyncio.T
     baud_const = BAUD_RATES.get(baudrate, termios.B9600)
     attrs[4] = baud_const  # ISPEED
     attrs[5] = baud_const  # OSPEED
-    termios.tcsetattr(serial_fd, termios.TCSANOW, attrs)
 
     # Enable hardware flow control (CRTSCTS)
     if hasattr(termios, 'CRTSCTS'):
         attrs[2] |= termios.CRTSCTS
+
+    termios.tcsetattr(serial_fd, termios.TCSANOW, attrs)
+
+    # Set the CTS modem bit high after enabling hardware flow control
+    if hasattr(termios, 'TIOCM_CTS') and hasattr(termios, 'TIOCMBIS'):
+        import struct
+        fcntl.ioctl(serial_fd, termios.TIOCMBIS, struct.pack('I', termios.TIOCM_CTS))
 
     def send_to_serial(data: bytes) -> None:
         os.write(serial_fd, data)
