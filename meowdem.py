@@ -521,6 +521,7 @@ def stdio_client_task() -> asyncio.Task:
     parser = HayesATParser(send_to_stdout)
     return asyncio.create_task(read_from_stdin(parser))
 
+
 def tcp_client_task(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> asyncio.Task:
     """ Return an asyncio Task for handling a TCP client. 
     :param reader: StreamReader for the client.
@@ -528,6 +529,64 @@ def tcp_client_task(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) 
     :return: The asyncio Task handling the client.
     """
     return asyncio.create_task(handle_tcp_client(reader, writer))
+
+
+def serial_client_task(serial_port_path: str, baudrate: int = 9600) -> asyncio.Task:
+    """ Start the serial port processing loop as a background task. 
+    :param serial_port_path: Path to the serial port device (e.g., /dev/ttyS0).
+    :param baudrate: Baud rate for the serial port.
+    :return: The asyncio Task handling the serial port.
+    """
+    import os
+    import fcntl
+    import termios
+    serial_fd = os.open(serial_port_path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+    # Set serial port to raw mode and baud rate
+    attrs = termios.tcgetattr(serial_fd)
+    tty.setraw(serial_fd)
+    # Set input and output baud rate (Linux only, using termios attribute indices)
+    # termios.ISPEED and OSPEED are indices 4 and 5 in attrs
+    import termios
+    BAUD_RATES = {
+        0: termios.B0,
+        50: termios.B50,
+        75: termios.B75,
+        110: termios.B110,
+        134: termios.B134,
+        150: termios.B150,
+        200: termios.B200,
+        300: termios.B300,
+        600: termios.B600,
+        1200: termios.B1200,
+        1800: termios.B1800,
+        2400: termios.B2400,
+        4800: termios.B4800,
+        9600: termios.B9600,
+        19200: termios.B19200,
+        38400: termios.B38400,
+        57600: termios.B57600,
+        115200: termios.B115200,
+        230400: termios.B230400,
+    }
+    baud_const = BAUD_RATES.get(baudrate, termios.B9600)
+    attrs[4] = baud_const  # ISPEED
+    attrs[5] = baud_const  # OSPEED
+    termios.tcsetattr(serial_fd, termios.TCSANOW, attrs)
+
+    def send_to_serial(data: bytes) -> None:
+        os.write(serial_fd, data)
+
+    async def read_from_serial(parser: HayesATParser) -> None:
+        loop = asyncio.get_running_loop()
+        while True:
+            data = await loop.run_in_executor(None, os.read, serial_fd, 1)
+            if not data:
+                break
+            parser.receive(data)
+
+    parser_serial = HayesATParser(send_to_serial)
+    return asyncio.create_task(read_from_serial(parser_serial))
+
 
 async def main() -> None:
     """ Main entry point: handles both stdin and TCP connections. 
@@ -543,10 +602,25 @@ async def main() -> None:
         default=None,
         help='Port to listen for TCP client connections (optional, e.g., 2323). If omitted, only stdin is used.'
     )
+    parser.add_argument(
+        '-s', '--serial-port',
+        type=str,
+        default=None,
+        help='Serial port device to attach to (e.g., /dev/ttyS0). If specified, meowdem will use this serial port as a client interface.'
+    )
+    parser.add_argument(
+        '--serial-baud',
+        type=int,
+        default=9600,
+        help='Baud rate for the serial port (default: 9600). Only used if --serial-port is specified.'
+    )
     args = parser.parse_args()
 
     tasks = []
-    tasks.append(stdio_client_task())
+    if args.serial_port is not None:
+        tasks.append(serial_client_task(args.serial_port, args.serial_baud))
+    else:
+        tasks.append(stdio_client_task())
 
     if args.tcp_client_port is not None:
         server = await asyncio.start_server(handle_tcp_client, '0.0.0.0', args.tcp_client_port)

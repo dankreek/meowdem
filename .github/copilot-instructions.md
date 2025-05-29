@@ -5,7 +5,7 @@ of single-line docstrings.
 
 Use type hints for all function and method arguments and return values. 
 
-Add two lines between top-level functions and class definitions.
+Add two lines between top-level functions and class definitions, following PEP 8
 
 # Testing
 
