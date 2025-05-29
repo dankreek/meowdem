@@ -544,9 +544,8 @@ def serial_client_task(serial_port_path: str, baudrate: int = 9600) -> asyncio.T
     # Set serial port to raw mode and baud rate
     attrs = termios.tcgetattr(serial_fd)
     tty.setraw(serial_fd)
+
     # Set input and output baud rate (Linux only, using termios attribute indices)
-    # termios.ISPEED and OSPEED are indices 4 and 5 in attrs
-    import termios
     BAUD_RATES = {
         0: termios.B0,
         50: termios.B50,
@@ -572,25 +571,42 @@ def serial_client_task(serial_port_path: str, baudrate: int = 9600) -> asyncio.T
     attrs[4] = baud_const  # ISPEED
     attrs[5] = baud_const  # OSPEED
 
+    # Set 8N1: 8 data bits, no parity, 1 stop bit
+    attrs[2] &= ~termios.PARENB  # Clear parity enable
+    attrs[2] &= ~termios.CSTOPB  # Clear stop bit (1 stop bit)
+    attrs[2] &= ~termios.CSIZE   # Clear data bits size
+    attrs[2] |= termios.CS8      # Set 8 data bits
+
+    # Set CLOCAL and CREAD
+    attrs[2] |= termios.CLOCAL | termios.CREAD
+
     # Enable hardware flow control (CRTSCTS)
     if hasattr(termios, 'CRTSCTS'):
         attrs[2] |= termios.CRTSCTS
 
-    # Turn echo off (disable ECHO flag)
-    if hasattr(termios, 'ECHO'):
-        attrs[3] &= ~termios.ECHO
+    # Input flags: disable all processing (raw)
+    attrs[0] &= ~(termios.IGNBRK | termios.BRKINT | termios.PARMRK |
+                  termios.ISTRIP | termios.INLCR | termios.IGNCR |
+                  termios.ICRNL | termios.IXON | termios.IXOFF | termios.IXANY)
 
-    # Turn off input and output buffering (set VMIN=1, VTIME=0)
+    # Output flags: disable post-processing
+    attrs[1] &= ~termios.OPOST
+
+    # Local flags: disable echo, canonical mode, signal chars
+    attrs[3] &= ~(termios.ECHO | termios.ECHONL | termios.ICANON |
+                  termios.ISIG | termios.IEXTEN)
+
+    # Control chars: VMIN=1, VTIME=0
     if hasattr(termios, 'VMIN') and hasattr(termios, 'VTIME'):
         attrs[6][termios.VMIN] = 1
         attrs[6][termios.VTIME] = 0
 
     termios.tcsetattr(serial_fd, termios.TCSANOW, attrs)
 
-    # Set the CTS modem bit high after enabling hardware flow control
-    if hasattr(termios, 'TIOCM_CTS') and hasattr(termios, 'TIOCMBIS'):
-        import struct
-        fcntl.ioctl(serial_fd, termios.TIOCMBIS, struct.pack('I', termios.TIOCM_CTS))
+    # Optionally set the CTS modem bit high after enabling hardware flow control (not needed for getty-like setup)
+    # if hasattr(termios, 'TIOCM_CTS') and hasattr(termios, 'TIOCMBIS'):
+    #     import struct
+    #     fcntl.ioctl(serial_fd, termios.TIOCMBIS, struct.pack('I', termios.TIOCM_CTS))
 
     def send_to_serial(data: bytes) -> None:
         os.write(serial_fd, data)
