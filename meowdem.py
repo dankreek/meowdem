@@ -471,50 +471,6 @@ class HayesATParser:
 
 #### Main ####
 
-def make_raw_with_signals(fd) -> list:
-    """ Set terminal to raw mode but keep signal generation (e.g., Ctrl-C). 
-    
-    :param fd: File descriptor of the terminal (usually sys.stdin.fileno()).
-    :return: Original terminal settings.
-    """
-    old_settings = termios.tcgetattr(fd)
-    new_settings = deepcopy(old_settings)
-
-    # Modify the new settings to make the terminal raw
-    new_settings[tty.IFLAG] &= ~(termios.IGNBRK | termios.BRKINT | termios.IGNPAR |
-                             termios.PARMRK | termios.INPCK | termios.ISTRIP |
-                             termios.INLCR | termios.IGNCR | termios.ICRNL |
-                             termios.IXON | termios.IXANY | termios.IXOFF)
-    new_settings[tty.OFLAG] &= ~termios.OPOST
-    new_settings[tty.CFLAG] &= ~(termios.PARENB | termios.CSIZE)
-    new_settings[tty.CFLAG] |= termios.CS8
-    new_settings[tty.LFLAG] &= ~(termios.ECHO | termios.ECHOE | termios.ECHOK |
-                             termios.ECHONL | termios.ICANON | termios.IEXTEN |
-                             termios.NOFLSH | termios.TOSTOP)
-    new_settings[tty.LFLAG] |= termios.ISIG  # Re-enable signal generation (Ctrl-C, etc.)
-    new_settings[tty.CC][termios.VMIN] = 1
-    new_settings[tty.CC][termios.VTIME] = 0
-
-    # Apply the new settings
-    termios.tcsetattr(fd, termios.TCSADRAIN, new_settings)
-    return old_settings
-
-
-async def stdin_without_echo() -> AsyncGenerator[str, None]:
-    fd = sys.stdin.fileno()
-    old_settings = make_raw_with_signals(fd)
-
-    try:
-        loop = asyncio.get_running_loop()
-        while True:
-            # Use asyncio to read a single character asynchronously
-            next_char = await loop.run_in_executor(None, sys.stdin.read, 1)
-            yield next_char
-    finally:
-        # Restore the original terminal settings
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-
-
 async def handle_tcp_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     """ Async handler for each TCP client using HayesATParser. 
     :param reader: StreamReader for the client.
@@ -551,11 +507,16 @@ def stdio_client_task() -> asyncio.Task:
     :return: The asyncio Task handling stdin.
     """
     def send_to_stdout(data: bytes) -> None:
-        print(data.decode('latin1'), end='', flush=True)
+        sys.stdout.buffer.write(data)
+        sys.stdout.buffer.flush()
 
     async def read_from_stdin(parser: HayesATParser) -> None:
-        async for next_char in stdin_without_echo():
-            parser.receive(next_char.encode('latin1'))
+        loop = asyncio.get_running_loop()
+        while True:
+            data = await loop.run_in_executor(None, sys.stdin.buffer.read, 1)
+            if not data:
+                break
+            parser.receive(data)
 
     parser = HayesATParser(send_to_stdout)
     return asyncio.create_task(read_from_stdin(parser))
