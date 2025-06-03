@@ -531,11 +531,10 @@ def tcp_client_task(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) 
     return asyncio.create_task(handle_tcp_client(reader, writer))
 
 
-def serial_client_task(serial_port_path: str, baudrate: int = 9600) -> asyncio.Task:
-    """ Start the serial port processing loop as a background task. 
+def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
+    """ Start the serial port processing and add to event loop 
     :param serial_port_path: Path to the serial port device (e.g., /dev/ttyS0).
     :param baudrate: Baud rate for the serial port.
-    :return: The asyncio Task handling the serial port.
     """
     import os
     import fcntl
@@ -603,24 +602,29 @@ def serial_client_task(serial_port_path: str, baudrate: int = 9600) -> asyncio.T
 
     termios.tcsetattr(serial_fd, termios.TCSANOW, attrs)
 
-    # Optionally set the CTS modem bit high after enabling hardware flow control (not needed for getty-like setup)
-    # if hasattr(termios, 'TIOCM_CTS') and hasattr(termios, 'TIOCMBIS'):
-    #     import struct
-    #     fcntl.ioctl(serial_fd, termios.TIOCMBIS, struct.pack('I', termios.TIOCM_CTS))
+    # Set CTS modem bit high after enabling hardware flow control
+    if hasattr(termios, 'TIOCM_CTS') and hasattr(termios, 'TIOCMBIS'):
+        import struct
+        fcntl.ioctl(serial_fd, termios.TIOCMBIS, struct.pack('I', termios.TIOCM_CTS))
 
     def send_to_serial(data: bytes) -> None:
         os.write(serial_fd, data)
 
-    async def read_from_serial(parser: HayesATParser) -> None:
-        loop = asyncio.get_running_loop()
-        while True:
-            data = await loop.run_in_executor(None, os.read, serial_fd, 1)
-            if not data:
-                break
-            parser.receive(data)
+    parser = HayesATParser(send_to_serial)
 
-    parser_serial = HayesATParser(send_to_serial)
-    return asyncio.create_task(read_from_serial(parser_serial))
+    def read_from_serial() -> None:
+        try:
+            data = os.read(serial_fd, 1024)
+            if not data:
+                return
+
+            parser.receive(data)
+        except OSError as e:
+            logging.error(f"Error reading from serial port: {e}")
+
+    loop = asyncio.get_running_loop()
+    loop.add_reader(serial_fd, read_from_serial)
+
 
 
 async def main() -> None:
@@ -654,7 +658,7 @@ async def main() -> None:
 
     tasks = []
     if args.serial_port is not None:
-        tasks.append(serial_client_task(args.serial_port, args.serial_baud))
+        start_serial_client(args.serial_port, args.serial_baud)
     else:
         tasks.append(stdio_client_task())
 
