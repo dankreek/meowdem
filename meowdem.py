@@ -437,6 +437,7 @@ class HayesATParser:
                 else:
                     self.client_out_cb(data)  # Output data in latin1 encoding
         except Exception as e:
+            logging.error(f"Exception in _handle_socket_connection: {e}", exc_info=True)
             pass
         finally:
             writer.close()
