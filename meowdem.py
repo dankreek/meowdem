@@ -660,6 +660,7 @@ async def main() -> None:
     tasks = []
     if args.serial_port is not None:
         start_serial_client(args.serial_port, args.serial_baud)
+        await asyncio.Future()
     else:
         tasks.append(stdio_client_task())
 
