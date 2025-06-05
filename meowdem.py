@@ -1,10 +1,14 @@
+import os
+import fcntl
+import termios
+import tty
+import struct
+import collections
 import asyncio
 import logging
 import re
 import sys
-import termios
 import time
-import tty
 import argparse
 
 from copy import deepcopy
@@ -537,12 +541,6 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
     :param serial_port_path: Path to the serial port device (e.g., /dev/ttyS0).
     :param baudrate: Baud rate for the serial port.
     """
-    import os
-    import fcntl
-    import termios
-    import tty
-    import struct
-    import collections
     serial_fd = os.open(serial_port_path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
     # Set serial port to raw mode and baud rate
     attrs = termios.tcgetattr(serial_fd)
@@ -611,13 +609,11 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
         fcntl.ioctl(serial_fd, termios.TIOCMBIS, struct.pack('I', termios.TIOCM_CTS))
 
     # Buffer for outgoing data
-    write_buffer = collections.deque()
     loop = asyncio.get_running_loop()
-    write_registered = False
+    write_buffer = collections.deque()
 
     def on_serial_writeable() -> None:
         """ Called by event loop when serial_fd is writeable. """
-        nonlocal write_registered
         try:
             while write_buffer:
                 data = write_buffer[0]
@@ -636,18 +632,14 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
                     break
             if not write_buffer:
                 loop.remove_writer(serial_fd)
-                write_registered = False
         except Exception as e:
             logging.error(f'Exception in on_serial_writeable: {e}')
 
     def send_to_serial(data: bytes) -> None:
         """ Buffer data and register writer callback if needed. """
-        nonlocal write_registered
         write_buffer.append(data)
-        if not write_registered:
-            loop.add_writer(serial_fd, on_serial_writeable)
-            write_registered = True
 
+    loop.add_writer(serial_fd, on_serial_writeable)
     parser = HayesATParser(send_to_serial)
 
     def read_from_serial() -> None:
