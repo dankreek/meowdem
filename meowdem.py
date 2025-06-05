@@ -543,7 +543,7 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
     import tty
     import struct
     import collections
-    serial_fd = os.open(serial_port_path, os.O_RDWR | os.O_NOCTTY | os.O.NONBLOCK)
+    serial_fd = os.open(serial_port_path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
     # Set serial port to raw mode and baud rate
     attrs = termios.tcgetattr(serial_fd)
     tty.setraw(serial_fd)
