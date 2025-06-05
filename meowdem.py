@@ -540,7 +540,10 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
     import os
     import fcntl
     import termios
-    serial_fd = os.open(serial_port_path, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
+    import tty
+    import struct
+    import collections
+    serial_fd = os.open(serial_port_path, os.O_RDWR | os.O_NOCTTY | os.O.NONBLOCK)
     # Set serial port to raw mode and baud rate
     attrs = termios.tcgetattr(serial_fd)
     tty.setraw(serial_fd)
@@ -605,11 +608,45 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
 
     # Set CTS modem bit high after enabling hardware flow control
     if hasattr(termios, 'TIOCM_CTS') and hasattr(termios, 'TIOCMBIS'):
-        import struct
         fcntl.ioctl(serial_fd, termios.TIOCMBIS, struct.pack('I', termios.TIOCM_CTS))
 
+    # Buffer for outgoing data
+    write_buffer = collections.deque()
+    loop = asyncio.get_running_loop()
+    write_registered = False
+
+    def on_serial_writeable() -> None:
+        """ Called by event loop when serial_fd is writeable. """
+        nonlocal write_registered
+        try:
+            while write_buffer:
+                data = write_buffer[0]
+                try:
+                    written = os.write(serial_fd, data)
+                    if written < len(data):
+                        # Not all data written, keep the rest
+                        write_buffer[0] = data[written:]
+                        break
+                    else:
+                        write_buffer.popleft()
+                except BlockingIOError:
+                    break
+                except OSError as e:
+                    logging.error(f'Error writing to serial port: {e}')
+                    break
+            if not write_buffer:
+                loop.remove_writer(serial_fd)
+                write_registered = False
+        except Exception as e:
+            logging.error(f'Exception in on_serial_writeable: {e}')
+
     def send_to_serial(data: bytes) -> None:
-        os.write(serial_fd, data)
+        """ Buffer data and register writer callback if needed. """
+        nonlocal write_registered
+        write_buffer.append(data)
+        if not write_registered:
+            loop.add_writer(serial_fd, on_serial_writeable)
+            write_registered = True
 
     parser = HayesATParser(send_to_serial)
 
@@ -618,14 +655,11 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
             data = os.read(serial_fd, 1024)
             if not data:
                 return
-
             parser.receive(data)
         except OSError as e:
-            logging.error(f"Error reading from serial port: {e}")
+            logging.error(f'Error reading from serial port: {e}')
 
-    loop = asyncio.get_running_loop()
     loop.add_reader(serial_fd, read_from_serial)
-
 
 
 async def main() -> None:
