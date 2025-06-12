@@ -636,7 +636,7 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
             logging.error(f'Exception in on_serial_writeable: {e}')
 
     def send_to_serial(data: bytes) -> None:
-        """ Buffer data and register writer callback if needed. """
+        """ Buffer data to be sent to serial port when ready. """
         write_buffer.append(data)
 
     loop.add_writer(serial_fd, on_serial_writeable)

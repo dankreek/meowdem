@@ -1,0 +1,1 @@
+MIDILINK_BIN_SOURCE=https://raw.githubusercontent.com/bbond007/MiSTer_MidiLink/refs/heads/master/uartmode
