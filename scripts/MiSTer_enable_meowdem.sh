@@ -12,7 +12,7 @@ echo "Enabling Meowdem..."
 MEOWDEM_FIRMWARE_SOURCE="https://raw.githubusercontent.com/dankreek/meowdem/refs/heads/main/meowdem.py"
 MEOWDEM_FIRMWARE_DEST="${MEOWDEM_FIRMWARE_DEST:-/media/fat/linux/meowdem.py}"
 echo "Downloading Meowdem firmware to ${MEOWDEM_FIRMWARE_DEST}..."
-curl -fsSL "$MEOWDEM_FIRMWARE_SOURCE" -o "$MEOWDEM_FIRMWARE_DEST"
+curl -fsSkL "$MEOWDEM_FIRMWARE_SOURCE" -o "$MEOWDEM_FIRMWARE_DEST"
 
 
 UARTMODE="${UARTMODE:-/usr/sbin/uartmode}"

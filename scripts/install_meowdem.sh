@@ -15,12 +15,12 @@ MISTER_SCRIPTS_DIR="/media/fat/linux/scripts"
 
 echo "Downloading Meowdem firmware to ${MEOWDEM_FIRMWARE_DEST}..."
 
-if ! curl -fsSL "$MEOWDEM_ENABLE_SOURCE" -o "$MISTER_SCRIPTS_DIR/MiSTer_enable_meowdem.sh"; then
+if ! curl -fsSkL "$MEOWDEM_ENABLE_SOURCE" -o "$MISTER_SCRIPTS_DIR/MiSTer_enable_meowdem.sh"; then
   echo "Error: Failed to download MiSTer_enable_meowdem.sh from $MEOWDEM_ENABLE_SOURCE" >&2
   exit 1
 fi
 
-if ! curl -fsSL "$MEOWDEM_DISABLE_SOURCE" -o "$MISTER_SCRIPTS_DIR/MiSTer_disable_meowdem.sh"; then
+if ! curl -fsSkL "$MEOWDEM_DISABLE_SOURCE" -o "$MISTER_SCRIPTS_DIR/MiSTer_disable_meowdem.sh"; then
   echo "Error: Failed to download MiSTer_disable_meowdem.sh from $MEOWDEM_DISABLE_SOURCE" >&2
   exit 1
 fi
