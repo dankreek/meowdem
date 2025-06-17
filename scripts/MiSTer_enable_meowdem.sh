@@ -1,11 +1,14 @@
-echo "\033[0;32m"
+AMBER='\033[38;2;255;191;0m'
+RESET='\033[0m'
+
+echo ${AMBER}
 cat << "EOF"
     /\_/\                                                                    
    ( o.o )   
     > ^ < 
 MiSTer Meowdem! 
 EOF
-echo "\033[0m"
+echo "${RESET}"
 
 echo "Enabling Meowdem..."
 
