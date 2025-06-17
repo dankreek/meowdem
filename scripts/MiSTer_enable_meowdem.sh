@@ -1,7 +1,7 @@
-AMBER='\033[38;2;255;191;0m'
-RESET='\033[0m'
+GREEN='\e[0;92m'
+RESET='\e[0m'
 
-echo ${AMBER}
+echo "${GREEN}"
 cat << "EOF"
     /\_/\                                                                    
    ( o.o )   
