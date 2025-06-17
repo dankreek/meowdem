@@ -1,14 +1,14 @@
-GREEN='\e[0;92m'
-RESET='\e[0m'
+GREEN="\e[0;32m"
+RESET="\e[0m"
 
-echo "${GREEN}"
+echo -e "${GREEN}"
 cat << "EOF"
-    /\_/\                                                                    
-   ( o.o )   
-    > ^ < 
-MiSTer Meowdem! 
+    /\_/\
+   ( o.o )
+    > ^ <
+MiSTer Meowdem!
 EOF
-echo "${RESET}"
+echo -e "${RESET}"
 
 echo "Enabling Meowdem..."
 
