@@ -27,6 +27,15 @@ Clone the repository:
  cd meowdem
 ```
 
+## Quick Install with curl
+
+You can install Meowdem using the provided install script directly from GitHub:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dankreek/meowdem/main/scripts/install_meowdem.sh | sh
+```
+
+This command downloads and executes the latest install script. Review the script before running for security best practices.
 
 ## Usage
 
