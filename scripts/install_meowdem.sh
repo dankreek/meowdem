@@ -13,7 +13,7 @@ MEOWDEM_ENABLE_SOURCE="https://raw.githubusercontent.com/dankreek/meowdem/refs/h
 MEOWDEM_DISABLE_SOURCE="https://raw.githubusercontent.com/dankreek/meowdem/refs/heads/main/scripts/MiSTer_disable_meowdem.sh"
 MISTER_SCRIPTS_DIR="/media/fat/linux/scripts"
 
-echo "Downloading Meowdem firmware to ${MEOWDEM_FIRMWARE_DEST}..."
+echo "Downloading Meowdem firmware to ${MISTER_SCRIPTS_DIR}"
 
 if ! curl -fsSkL "$MEOWDEM_ENABLE_SOURCE" -o "$MISTER_SCRIPTS_DIR/MiSTer_enable_meowdem.sh"; then
   echo "Error: Failed to download MiSTer_enable_meowdem.sh from $MEOWDEM_ENABLE_SOURCE" >&2
