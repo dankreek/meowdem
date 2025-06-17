@@ -11,7 +11,7 @@ echo "Downloading Meowdem Scripts..."
 
 MEOWDEM_ENABLE_SOURCE="https://raw.githubusercontent.com/dankreek/meowdem/refs/heads/main/scripts/MiSTer_enable_meowdem.sh"
 MEOWDEM_DISABLE_SOURCE="https://raw.githubusercontent.com/dankreek/meowdem/refs/heads/main/scripts/MiSTer_disable_meowdem.sh"
-MISTER_SCRIPTS_DIR="/media/fat/linux/scripts"
+MISTER_SCRIPTS_DIR="/media/fat/linux/Scripts"
 
 echo "Downloading Meowdem firmware to ${MISTER_SCRIPTS_DIR}"
 
