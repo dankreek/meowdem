@@ -4,6 +4,8 @@ export SCRATCH_DIR="${SCRATCH_DIR:-./scratch}"
 export UARTMODE=$SCRATCH_DIR/uartmode
 export MEOWDEM_FIRMWARE_DEST="${SCRATCH_DIR:-./scratch}/meowdem.py"
 
+mkdir -p "$SCRATCH_DIR"
+
 if ! command -v wget >/dev/null 2>&1; then
     echo "Error: wget is not installed. Please install wget first."
     exit 1
