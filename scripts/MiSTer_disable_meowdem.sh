@@ -5,7 +5,7 @@ echo "Disabling Meowdem..."
 
 if [ -f "$UARTMODE" ]; then
     echo "Restoring original uartmode script from ${UARTMODE}..."
-    curl -fsSL "$UARTMODE" -o /usr/sbin/uartmode
+    curl -fsSkL "$UARTMODE" -o /usr/sbin/uartmode
 else
     echo "Error: $UARTMODE not found. Please check the URL or your internet connection."
     exit 1
