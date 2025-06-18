@@ -614,6 +614,7 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
 
     def on_serial_writeable() -> None:
         """ Called by event loop when serial_fd is writeable. """
+        logging.info('Serial port is writable')
         try:
             while write_buffer:
                 data = write_buffer[0]
@@ -643,6 +644,7 @@ def start_serial_client(serial_port_path: str, baudrate: int = 9600) -> None:
     parser = HayesATParser(send_to_serial)
 
     def read_from_serial() -> None:
+        logging.info('Reading from serial port')
         try:
             data = os.read(serial_fd, 1024)
             if not data:
